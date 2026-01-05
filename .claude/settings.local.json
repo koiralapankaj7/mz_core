@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dart analyze:*)",
+      "Bash(dart test:*)",
+      "Bash(flutter test:*)",
+      "Bash(for i in {1..3})",
+      "Bash(do echo \"=== Run $i ===\")",
+      "Bash(done)",
+      "Skill(flutter-dart-test)",
+      "Bash(find:*)",
+      "Bash(genhtml:*)",
+      "Bash(lcov:*)",
+      "Bash(open:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(tee:*)",
+      "Bash(dart run:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(dart format:*)",
+      "Skill(flutter-dart-dev)",
+      "Bash(dart fix:*)",
+      "Bash(for file in test/src/extensions_test.dart test/src/simple_logger_test.dart test/src/throttler_test.dart test/mz_utils_test.dart)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(for file in test/src/controller_watcher_test.dart test/src/listenable_iterables_test.dart)",
+      "Bash(git checkout:*)",
+      "Bash(sort:*)",
+      "Skill(flutter-dart-docs)",
+      "Bash(flutter pub get:*)"
+    ]
+  }
+}
