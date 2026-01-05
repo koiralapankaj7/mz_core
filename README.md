@@ -465,8 +465,8 @@ flutter test
 
 ## Requirements
 
-- **Flutter**: >=3.0.0
-- **Dart**: >=3.5.0
+- **Flutter**: >=3.38.0
+- **Dart**: >=3.10.3
 
 ## Contributing
 
