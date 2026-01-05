@@ -2,11 +2,29 @@
 
 This guide shows how to protect the `main` branch from direct pushes and require Pull Requests.
 
-## Quick Setup
+## Automated Setup (Recommended)
+
+Run the setup script using GitHub CLI:
+
+```bash
+# Make sure GitHub CLI is installed and authenticated
+gh auth login
+
+# Run the setup script
+.github/setup-branch-protection.sh
+```
+
+That's it! The script will configure all protection rules automatically.
+
+---
+
+## Manual Setup
+
+If you prefer manual configuration:
 
 1. **Go to Branch Protection Settings**
 
-   Visit: https://github.com/koiralapankaj7/mz_utils/settings/branches
+   Visit: <https://github.com/koiralapankaj7/mz_utils/settings/branches>
 
 2. **Click "Add branch protection rule"**
 
@@ -16,7 +34,7 @@ This guide shows how to protect the `main` branch from direct pushes and require
 
 ### Branch name pattern
 
-```
+```text
 main
 ```
 
@@ -32,7 +50,7 @@ main
   - This ensures reviews are current
 
 - ☑ **Require review from Code Owners** (optional)
-  - Only if you create a CODEOWNERS file
+  - Only if you create a `.github/CODEOWNERS` file
 
 #### ✅ Require status checks to pass before merging
 
@@ -128,7 +146,7 @@ git commit -m "feat: add new feature"
 git push origin feature/my-feature
 
 # 4. Create PR on GitHub
-# Visit: https://github.com/koiralapankaj7/mz_utils/compare
+# Visit: <https://github.com/koiralapankaj7/mz_utils/compare>
 
 # 5. Wait for CI checks to pass
 
@@ -173,5 +191,5 @@ This ensures dev always passes CI but allows direct pushes.
 
 ## Need Help?
 
-- GitHub Docs: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+- [GitHub Docs on Protected Branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
 - If you get locked out, you can temporarily disable protection in Settings → Branches
