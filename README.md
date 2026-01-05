@@ -4,6 +4,8 @@ A collection of production-ready Flutter and Dart utilities for state management
 
 [![pub package](https://img.shields.io/pub/v/mz_utils.svg)](https://pub.dev/packages/mz_utils)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![codecov](https://codecov.io/gh/koiralapankaj7/mz_utils/branch/main/graph/badge.svg)](https://codecov.io/gh/koiralapankaj7/mz_utils)
+[![CI](https://github.com/koiralapankaj7/mz_utils/workflows/CI/badge.svg)](https://github.com/koiralapankaj7/mz_utils/actions)
 
 ## Features
 
@@ -190,6 +192,25 @@ class _SaveButtonState extends State<SaveButton> {
 }
 ```
 
+## Example App
+
+A comprehensive example app demonstrating all features is included in the `/example` directory.
+
+**Run the example:**
+
+```bash
+cd example
+flutter run
+```
+
+The example app includes interactive demos for:
+
+- **State Management**: Controllers with `.watch()`, key-based notifications, and priority listeners
+- **Logging System**: Multiple output formats (Plain Text, JSON, Compact), log levels, and groups
+- **Rate Limiting**: Debouncing search input, throttling button clicks, and async debouncing
+- **Observable Collections**: ListenableList task manager and ListenableSet tag selector
+- **Extension Methods**: Interactive demonstrations of all extension utilities
+
 ## Documentation
 
 | Resource | Description |
@@ -201,7 +222,7 @@ class _SaveButtonState extends State<SaveButton> {
 
 ## Features in Detail
 
-### Controllers
+### Controllers Overview
 
 Type-safe state management with built-in lifecycle:
 
@@ -213,7 +234,7 @@ Type-safe state management with built-in lifecycle:
 
 **Use case**: Managing app state, form state, feature flags, user data
 
-### Auto-Disposal
+### Auto-Disposal Pattern
 
 Automatic resource cleanup pattern:
 
@@ -224,7 +245,7 @@ Automatic resource cleanup pattern:
 
 **Use case**: Cleaning up streams, timers, controllers, file handles
 
-### Observable Collections
+### Observable Collections Details
 
 Listenable versions of standard collections:
 
@@ -235,7 +256,7 @@ Listenable versions of standard collections:
 
 **Use case**: Todo lists, shopping carts, real-time data displays
 
-### Structured Logging
+### Structured Logging Details
 
 Production-ready logging system:
 
@@ -247,7 +268,7 @@ Production-ready logging system:
 
 **Use case**: Debug logs, error tracking, audit trails, analytics
 
-### Rate Limiting
+### Rate Limiting Details
 
 Control function execution frequency:
 
@@ -257,7 +278,7 @@ Control function execution frequency:
 
 **Use case**: API rate limiting, UI event handling, auto-save
 
-### Extensions
+### Extensions Details
 
 Convenient extension methods:
 
@@ -445,7 +466,7 @@ flutter test
 ## Requirements
 
 - **Flutter**: >=3.0.0
-- **Dart**: >=3.0.0
+- **Dart**: >=3.5.0
 
 ## Contributing
 
@@ -464,13 +485,13 @@ This package is released under the [BSD-3-Clause License](LICENSE).
 
 ## Credits
 
-Developed and maintained by the mz_utils team.
+Developed and maintained by [Pankaj Koirala](https://github.com/koiralapankaj7).
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-repo/mz_utils/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/mz_utils/discussions)
-- **Email**: <support@example.com>
+- **Issues**: [GitHub Issues](https://github.com/koiralapankaj7/mz_utils/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/koiralapankaj7/mz_utils/discussions)
+- **Repository**: [GitHub](https://github.com/koiralapankaj7/mz_utils)
 
 ## Related Packages
 

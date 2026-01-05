@@ -1320,7 +1320,7 @@ void main() {
         controller
           ..addListener(() {
             throw Exception('Test error');
-          }, priority: 1)
+          }, priority: 1,)
           ..addListener(() => successCount++, key: 'test')
           ..notify('test');
 

@@ -386,7 +386,7 @@ abstract final class WatcherDebug {
       // ignore: avoid_print
       print(_WatcherRegistry.debugDescribe());
       return true;
-    }(), 'Debug assertion for watcher state output');
+    }(), 'Debug assertion for watcher state output',);
   }
 
   /// Get watcher count for a specific controller

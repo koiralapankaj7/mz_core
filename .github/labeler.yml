@@ -1,0 +1,58 @@
+# Automatic PR labeling configuration
+
+'documentation':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'README.md'
+      - 'doc/**/*'
+      - '**/*.md'
+
+'dependencies':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'pubspec.yaml'
+      - '**/pubspec.yaml'
+
+'tests':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'test/**/*'
+      - '**/*_test.dart'
+
+'example':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'example/**/*'
+
+'controller':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/controller*.dart'
+
+'logger':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/simple_logger*.dart'
+      - '**/logger*.dart'
+
+'extensions':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/extensions*.dart'
+
+'ci/cd':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**/*'
+
+'breaking-change':
+  - head-branch: ['^breaking', 'major']
+
+'enhancement':
+  - head-branch: ['^feat', '^feature', 'enhancement']
+
+'bug':
+  - head-branch: ['^fix', '^bugfix', 'bug']
+
+'refactor':
+  - head-branch: ['^refactor']
