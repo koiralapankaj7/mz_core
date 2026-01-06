@@ -1,7 +1,7 @@
 name: mz_utils_example
 description: Comprehensive example app demonstrating all mz_utils features
 publish_to: 'none'
-version: 1.0.0
+version: 1.1.0
 
 environment:
   sdk: ^3.5.0

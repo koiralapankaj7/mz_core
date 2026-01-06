@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/listenable_iterables.dart';
+import 'package:mz_utils/src/listenables.dart';
 
 void main() {
   group('ListenableList Tests |', () {
@@ -1345,6 +1345,477 @@ void main() {
           ..dispose();
         expect(map.isEmpty, isTrue);
         expect(map.isDisposed, isTrue);
+      });
+    });
+  });
+
+  group('ListenableNum Tests |', () {
+    group('Constructors -', () {
+      test('should create with int value', () {
+        final counter = ListenableNum<int>(10);
+        expect(counter.value, 10);
+        expect(counter.prevValue, isNull);
+      });
+
+      test('should create with double value', () {
+        final amount = ListenableNum<double>(10.5);
+        expect(amount.value, 10.5);
+        expect(amount.prevValue, isNull);
+      });
+    });
+
+    group('Value Getter and Setter -', () {
+      test('should get value', () {
+        final counter = ListenableNum<int>(10);
+        expect(counter.value, 10);
+      });
+
+      test('should set value and notify', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..value = 20;
+        expect(counter.value, 20);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should not notify when setting same value', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..value = 10;
+        expect(notified, isFalse);
+      });
+    });
+
+    group('Previous Value Tracking -', () {
+      test('should have no previous value initially', () {
+        final counter = ListenableNum<int>(10);
+        expect(counter.prevValue, isNull);
+        expect(counter.hasPrevValue, isFalse);
+      });
+
+      test('should track previous value after change', () {
+        final counter = ListenableNum<int>(10)
+          ..value = 20
+          ..value = 30;
+        expect(counter.prevValue, 20);
+        expect(counter.hasPrevValue, isTrue);
+      });
+    });
+
+    group('Arithmetic Methods -', () {
+      test('should add and notify', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..add(5);
+        expect(counter.value, 15);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should add silently', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..add(5, silent: true);
+        expect(counter.value, 15);
+        expect(notified, isFalse);
+      });
+
+      test('should subtract and notify', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..subtract(3);
+        expect(counter.value, 7);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should subtract silently', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..subtract(3, silent: true);
+        expect(counter.value, 7);
+        expect(notified, isFalse);
+      });
+
+      test('should multiply and notify', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..multiply(3);
+        expect(counter.value, 30);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should multiply silently', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..multiply(3, silent: true);
+        expect(counter.value, 30);
+        expect(notified, isFalse);
+      });
+
+      test('should divide and notify', () {
+        final amount = ListenableNum<double>(100);
+        var notified = false;
+        amount
+          ..addListener(() => notified = true)
+          ..divide(4);
+        expect(amount.value, 25);
+        expect(amount.prevValue, 100);
+        expect(notified, isTrue);
+      });
+
+      test('should divide silently', () {
+        final amount = ListenableNum<double>(100);
+        var notified = false;
+        amount
+          ..addListener(() => notified = true)
+          ..divide(4, silent: true);
+        expect(amount.value, 25);
+        expect(notified, isFalse);
+      });
+
+      test('should modulo and notify', () {
+        final counter = ListenableNum<int>(17);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..modulo(5);
+        expect(counter.value, 2);
+        expect(counter.prevValue, 17);
+        expect(notified, isTrue);
+      });
+
+      test('should modulo silently', () {
+        final counter = ListenableNum<int>(17);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..modulo(5, silent: true);
+        expect(counter.value, 2);
+        expect(notified, isFalse);
+      });
+    });
+
+    group('Increment and Decrement -', () {
+      test('should increment and notify', () {
+        final counter = ListenableNum<int>(5);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..increment();
+        expect(counter.value, 6);
+        expect(counter.prevValue, 5);
+        expect(notified, isTrue);
+      });
+
+      test('should increment silently', () {
+        final counter = ListenableNum<int>(5);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..increment(silent: true);
+        expect(counter.value, 6);
+        expect(notified, isFalse);
+      });
+
+      test('should decrement and notify', () {
+        final counter = ListenableNum<int>(5);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..decrement();
+        expect(counter.value, 4);
+        expect(counter.prevValue, 5);
+        expect(notified, isTrue);
+      });
+
+      test('should decrement silently', () {
+        final counter = ListenableNum<int>(5);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..decrement(silent: true);
+        expect(counter.value, 4);
+        expect(notified, isFalse);
+      });
+    });
+
+    group('Reset, Abs, Negate, and Clamp -', () {
+      test('should reset to zero and notify', () {
+        final counter = ListenableNum<int>(42);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..reset();
+        expect(counter.value, 0);
+        expect(counter.prevValue, 42);
+        expect(notified, isTrue);
+      });
+
+      test('should not notify when resetting zero value', () {
+        final counter = ListenableNum<int>(0);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..reset();
+        expect(notified, isFalse);
+      });
+
+      test('should reset silently', () {
+        final counter = ListenableNum<int>(42);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..reset(silent: true);
+        expect(counter.value, 0);
+        expect(notified, isFalse);
+      });
+
+      test('should get absolute value and notify', () {
+        final counter = ListenableNum<int>(-10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..abs();
+        expect(counter.value, 10);
+        expect(counter.prevValue, -10);
+        expect(notified, isTrue);
+      });
+
+      test('should not notify when value already positive', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..abs();
+        expect(notified, isFalse);
+      });
+
+      test('should abs silently', () {
+        final counter = ListenableNum<int>(-10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..abs(silent: true);
+        expect(counter.value, 10);
+        expect(notified, isFalse);
+      });
+
+      test('should negate and notify', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..negate();
+        expect(counter.value, -10);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should negate silently', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..negate(silent: true);
+        expect(counter.value, -10);
+        expect(notified, isFalse);
+      });
+
+      test('should clamp and notify', () {
+        final counter = ListenableNum<int>(15);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..clamp(0, 10);
+        expect(counter.value, 10);
+        expect(counter.prevValue, 15);
+        expect(notified, isTrue);
+      });
+
+      test('should not notify when value already in range', () {
+        final counter = ListenableNum<int>(5);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..clamp(0, 10);
+        expect(notified, isFalse);
+      });
+
+      test('should clamp silently', () {
+        final counter = ListenableNum<int>(15);
+        var notified = false;
+        counter
+          ..addListener(() => notified = true)
+          ..clamp(0, 10, silent: true);
+        expect(counter.value, 10);
+        expect(notified, isFalse);
+      });
+    });
+
+    group('Arithmetic Operators -', () {
+      test('should add with + operator and return value', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = counter + 5;
+        expect(result, 15);
+        expect(counter.value, 15);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should subtract with - operator and return value', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = counter - 3;
+        expect(result, 7);
+        expect(counter.value, 7);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should multiply with * operator and return value', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = counter * 3;
+        expect(result, 30);
+        expect(counter.value, 30);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+
+      test('should divide with / operator and return value', () {
+        final amount = ListenableNum<double>(100);
+        var notified = false;
+        amount.addListener(() => notified = true);
+
+        final result = amount / 4;
+        expect(result, 25);
+        expect(amount.value, 25);
+        expect(amount.prevValue, 100);
+        expect(notified, isTrue);
+      });
+
+      test('should integer divide with ~/ operator and return value', () {
+        final counter = ListenableNum<int>(17);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = counter ~/ 5;
+        expect(result, 3);
+        expect(counter.value, 3);
+        expect(counter.prevValue, 17);
+        expect(notified, isTrue);
+      });
+
+      test('should modulo with % operator and return value', () {
+        final counter = ListenableNum<int>(17);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = counter % 5;
+        expect(result, 2);
+        expect(counter.value, 2);
+        expect(counter.prevValue, 17);
+        expect(notified, isTrue);
+      });
+
+      test('should negate with unary - operator and return value', () {
+        final counter = ListenableNum<int>(10);
+        var notified = false;
+        counter.addListener(() => notified = true);
+
+        final result = -counter;
+        expect(result, -10);
+        expect(counter.value, -10);
+        expect(counter.prevValue, 10);
+        expect(notified, isTrue);
+      });
+    });
+
+    group('Comparison Operators -', () {
+      test('should compare with < operator', () {
+        final counter = ListenableNum<int>(5);
+        expect(counter < 10, isTrue);
+        expect(counter < 3, isFalse);
+        expect(counter < 5, isFalse);
+      });
+
+      test('should compare with <= operator', () {
+        final counter = ListenableNum<int>(5);
+        expect(counter <= 10, isTrue);
+        expect(counter <= 5, isTrue);
+        expect(counter <= 3, isFalse);
+      });
+
+      test('should compare with > operator', () {
+        final counter = ListenableNum<int>(5);
+        expect(counter > 3, isTrue);
+        expect(counter > 10, isFalse);
+        expect(counter > 5, isFalse);
+      });
+
+      test('should compare with >= operator', () {
+        final counter = ListenableNum<int>(5);
+        expect(counter >= 3, isTrue);
+        expect(counter >= 5, isTrue);
+        expect(counter >= 10, isFalse);
+      });
+    });
+
+    group('toString -', () {
+      test('should convert to string', () {
+        final counter = ListenableNum<int>(42);
+        expect(counter.toString(), '42');
+
+        final amount = ListenableNum<double>(10.5);
+        expect(amount.toString(), '10.5');
+      });
+    });
+
+    group('Chained Operations -', () {
+      test('should chain arithmetic operations', () {
+        final counter = ListenableNum<int>(10);
+        var notifyCount = 0;
+        counter
+          ..addListener(() => notifyCount++)
+          ..add(5)
+          ..multiply(2)
+          ..subtract(10);
+
+        expect(counter.value, 20);
+        expect(notifyCount, 3);
+      });
+
+      test('should use operator return values in expressions', () {
+        final counter = ListenableNum<int>(10);
+        final result = (counter + 5) * 2;
+        expect(result, 30);
+        expect(counter.value, 15);
       });
     });
   });

@@ -13,214 +13,6 @@ typedef DebouncerCallback = void Function();
 /// Used by [AdvanceDebouncer] for type-safe async debouncing operations.
 typedef Debounceable<S, T> = Future<S?> Function(T parameter);
 
-class _DebouncerOperation {
-  _DebouncerOperation(this.callback, this.timer);
-  DebouncerCallback callback;
-  Timer timer;
-}
-
-/// {@template mz_utils.Debouncer}
-/// Static utility class for debouncing function calls.
-///
-/// [Debouncer] delays function execution until calls stop for a specified
-/// duration. If another call happens before the duration expires, the timer
-/// resets.
-///
-/// ## When to Use Debouncing
-///
-/// Use debouncing when you want to:
-/// * Wait for user input to stop before acting (search-as-you-type)
-/// * Batch rapid-fire events into single actions
-/// * Avoid excessive API calls during user interaction
-/// * Auto-save after editing stops
-///
-/// ## Basic Usage
-///
-/// {@tool snippet}
-/// Debounce search input:
-///
-/// ```dart
-/// TextField(
-///   onChanged: (query) {
-///     Debouncer.debounce(
-///       'search',
-///       const Duration(milliseconds: 500),
-///       () => performSearch(query),
-///     );
-///   },
-/// )
-/// ```
-/// {@end-tool}
-///
-/// ## Multiple Debounce Operations
-///
-/// {@tool snippet}
-/// Use different tags for independent operations:
-///
-/// ```dart
-/// // Search debouncer
-/// Debouncer.debounce('search', duration, () => search());
-///
-/// // Save debouncer (independent)
-/// Debouncer.debounce('save', duration, () => save());
-/// ```
-/// {@end-tool}
-///
-/// ## Cleanup
-///
-/// {@tool snippet}
-/// Cancel operations when widgets are disposed:
-///
-/// ```dart
-/// @override
-/// void dispose() {
-///   Debouncer.cancel('search');
-///   // Or cancel all
-///   Debouncer.cancelAll();
-///   super.dispose();
-/// }
-/// ```
-/// {@end-tool}
-///
-/// See also:
-///
-/// * [Throttler], which limits execution frequency instead of delaying
-/// * [AdvanceDebouncer], which provides type-safe async debouncing
-/// {@endtemplate}
-abstract class Debouncer {
-  static final Map<String, _DebouncerOperation> _operations = {};
-
-  /// Delays execution of [onExecute] until calls stop for [duration].
-  ///
-  /// {@macro mz_utils.Debouncer}
-  ///
-  /// Each call with the same [tag] cancels any previous pending operation and
-  /// starts a new timer. The callback only executes after [duration] passes
-  /// without any new calls.
-  ///
-  /// The [tag] parameter uniquely identifies this debounce operation. Use the
-  /// same tag for related calls that should cancel each other.
-  ///
-  /// The [duration] parameter specifies how long to wait after the last call.
-  /// If `Duration.zero`, [onExecute] executes immediately (synchronously).
-  ///
-  /// {@tool snippet}
-  /// Debounce API calls:
-  ///
-  /// ```dart
-  /// void onSearchChanged(String query) {
-  ///   Debouncer.debounce(
-  ///     'api-search',
-  ///     const Duration(milliseconds: 300),
-  ///     () async {
-  ///       final results = await api.search(query);
-  ///       setState(() => _results = results);
-  ///     },
-  ///   );
-  /// }
-  /// ```
-  /// {@end-tool}
-  static void debounce(
-    String tag,
-    Duration duration,
-    DebouncerCallback onExecute,
-  ) {
-    _operations[tag]?.timer.cancel();
-    if (duration == Duration.zero) {
-      _operations.remove(tag);
-      onExecute();
-    } else {
-      _operations[tag] = _DebouncerOperation(
-        onExecute,
-        Timer(duration, () {
-          _operations[tag]?.timer.cancel();
-          _operations.remove(tag);
-          onExecute();
-        }),
-      );
-    }
-  }
-
-  /// Fires the callback for [tag] immediately without canceling the timer.
-  ///
-  /// Executes the callback associated with [tag] right away, but leaves the
-  /// debounce timer active. To both execute and cancel, call [fire] followed
-  /// by [cancel].
-  ///
-  /// Does nothing if no operation exists for [tag].
-  static void fire(String tag) {
-    _operations[tag]?.callback();
-  }
-
-  /// Cancels any active debounce operation with [tag].
-  ///
-  /// Stops the timer and removes the operation. The callback will not execute.
-  ///
-  /// {@tool snippet}
-  /// Cancel debounce operations:
-  ///
-  /// ```dart
-  /// @override
-  /// void dispose() {
-  ///   Debouncer.cancel('search');
-  ///   super.dispose();
-  /// }
-  /// ```
-  /// {@end-tool}
-  static void cancel(String tag) {
-    _operations[tag]?.timer.cancel();
-    _operations.remove(tag);
-  }
-
-  /// Cancels all active debounce operations.
-  ///
-  /// Stops all timers and clears all pending callbacks. Use when cleaning up
-  /// multiple operations at once.
-  ///
-  /// {@tool snippet}
-  /// Cancel all operations:
-  ///
-  /// ```dart
-  /// @override
-  /// void dispose() {
-  ///   Debouncer.cancelAll();
-  ///   super.dispose();
-  /// }
-  /// ```
-  /// {@end-tool}
-  static void cancelAll() {
-    for (final operation in _operations.values) {
-      operation.timer.cancel();
-    }
-    _operations.clear();
-  }
-
-  /// Returns the number of active debounce operations.
-  ///
-  /// Useful for debugging or testing debounce behavior.
-  static int count() {
-    return _operations.length;
-  }
-
-  /// Returns whether a debounce operation with [tag] is currently active.
-  ///
-  /// Returns `true` if there is an active debounce timer for this tag,
-  /// `false` otherwise.
-  ///
-  /// {@tool snippet}
-  /// Check if debounce is active:
-  ///
-  /// ```dart
-  /// if (Debouncer.isActive('save')) {
-  ///   showIndicator('Saving...');
-  /// }
-  /// ```
-  /// {@end-tool}
-  static bool isActive(String tag) {
-    return _operations.containsKey(tag);
-  }
-}
-
 /// {@template mz_utils.Throttler}
 /// A throttler that limits how often a function can be called.
 ///
@@ -558,6 +350,208 @@ class Throttler {
     _action = null;
     _timer?.cancel();
     _timer = null;
+  }
+}
+
+/// {@template mz_utils.Debouncer}
+/// Static utility class for debouncing function calls.
+///
+/// [Debouncer] delays function execution until calls stop for a specified
+/// duration. If another call happens before the duration expires, the timer
+/// resets.
+///
+/// ## When to Use Debouncing
+///
+/// Use debouncing when you want to:
+/// * Wait for user input to stop before acting (search-as-you-type)
+/// * Batch rapid-fire events into single actions
+/// * Avoid excessive API calls during user interaction
+/// * Auto-save after editing stops
+///
+/// ## Basic Usage
+///
+/// {@tool snippet}
+/// Debounce search input:
+///
+/// ```dart
+/// TextField(
+///   onChanged: (query) {
+///     Debouncer.debounce(
+///       'search',
+///       const Duration(milliseconds: 500),
+///       () => performSearch(query),
+///     );
+///   },
+/// )
+/// ```
+/// {@end-tool}
+///
+/// ## Multiple Debounce Operations
+///
+/// {@tool snippet}
+/// Use different tags for independent operations:
+///
+/// ```dart
+/// // Search debouncer
+/// Debouncer.debounce('search', duration, () => search());
+///
+/// // Save debouncer (independent)
+/// Debouncer.debounce('save', duration, () => save());
+/// ```
+/// {@end-tool}
+///
+/// ## Cleanup
+///
+/// {@tool snippet}
+/// Cancel operations when widgets are disposed:
+///
+/// ```dart
+/// @override
+/// void dispose() {
+///   Debouncer.cancel('search');
+///   // Or cancel all
+///   Debouncer.cancelAll();
+///   super.dispose();
+/// }
+/// ```
+/// {@end-tool}
+///
+/// See also:
+///
+/// * [Throttler], which limits execution frequency instead of delaying
+/// * [AdvanceDebouncer], which provides type-safe async debouncing
+/// {@endtemplate}
+abstract class Debouncer {
+  static final Map<String, _DebouncerOperation> _operations = {};
+
+  /// Delays execution of [onExecute] until calls stop for [duration].
+  ///
+  /// {@macro mz_utils.Debouncer}
+  ///
+  /// Each call with the same [tag] cancels any previous pending operation and
+  /// starts a new timer. The callback only executes after [duration] passes
+  /// without any new calls.
+  ///
+  /// The [tag] parameter uniquely identifies this debounce operation. Use the
+  /// same tag for related calls that should cancel each other.
+  ///
+  /// The [duration] parameter specifies how long to wait after the last call.
+  /// If `Duration.zero`, [onExecute] executes immediately (synchronously).
+  ///
+  /// {@tool snippet}
+  /// Debounce API calls:
+  ///
+  /// ```dart
+  /// void onSearchChanged(String query) {
+  ///   Debouncer.debounce(
+  ///     'api-search',
+  ///     const Duration(milliseconds: 300),
+  ///     () async {
+  ///       final results = await api.search(query);
+  ///       setState(() => _results = results);
+  ///     },
+  ///   );
+  /// }
+  /// ```
+  /// {@end-tool}
+  static void debounce(
+    String tag,
+    Duration duration,
+    DebouncerCallback onExecute,
+  ) {
+    _operations[tag]?.timer.cancel();
+    if (duration == Duration.zero) {
+      _operations.remove(tag);
+      onExecute();
+    } else {
+      _operations[tag] = _DebouncerOperation(
+        onExecute,
+        Timer(duration, () {
+          _operations[tag]?.timer.cancel();
+          _operations.remove(tag);
+          onExecute();
+        }),
+      );
+    }
+  }
+
+  /// Fires the callback for [tag] immediately without canceling the timer.
+  ///
+  /// Executes the callback associated with [tag] right away, but leaves the
+  /// debounce timer active. To both execute and cancel, call [fire] followed
+  /// by [cancel].
+  ///
+  /// Does nothing if no operation exists for [tag].
+  static void fire(String tag) {
+    _operations[tag]?.callback();
+  }
+
+  /// Cancels any active debounce operation with [tag].
+  ///
+  /// Stops the timer and removes the operation. The callback will not execute.
+  ///
+  /// {@tool snippet}
+  /// Cancel debounce operations:
+  ///
+  /// ```dart
+  /// @override
+  /// void dispose() {
+  ///   Debouncer.cancel('search');
+  ///   super.dispose();
+  /// }
+  /// ```
+  /// {@end-tool}
+  static void cancel(String tag) {
+    _operations[tag]?.timer.cancel();
+    _operations.remove(tag);
+  }
+
+  /// Cancels all active debounce operations.
+  ///
+  /// Stops all timers and clears all pending callbacks. Use when cleaning up
+  /// multiple operations at once.
+  ///
+  /// {@tool snippet}
+  /// Cancel all operations:
+  ///
+  /// ```dart
+  /// @override
+  /// void dispose() {
+  ///   Debouncer.cancelAll();
+  ///   super.dispose();
+  /// }
+  /// ```
+  /// {@end-tool}
+  static void cancelAll() {
+    for (final operation in _operations.values) {
+      operation.timer.cancel();
+    }
+    _operations.clear();
+  }
+
+  /// Returns the number of active debounce operations.
+  ///
+  /// Useful for debugging or testing debounce behavior.
+  static int count() {
+    return _operations.length;
+  }
+
+  /// Returns whether a debounce operation with [tag] is currently active.
+  ///
+  /// Returns `true` if there is an active debounce timer for this tag,
+  /// `false` otherwise.
+  ///
+  /// {@tool snippet}
+  /// Check if debounce is active:
+  ///
+  /// ```dart
+  /// if (Debouncer.isActive('save')) {
+  ///   showIndicator('Saving...');
+  /// }
+  /// ```
+  /// {@end-tool}
+  static bool isActive(String tag) {
+    return _operations.containsKey(tag);
   }
 }
 
@@ -1044,6 +1038,12 @@ abstract class AdvanceDebouncer {
   static bool isActive(String tag) {
     return _operations.containsKey(tag);
   }
+}
+
+class _DebouncerOperation {
+  _DebouncerOperation(this.callback, this.timer);
+  DebouncerCallback callback;
+  Timer timer;
 }
 
 // A wrapper around Timer used for debouncing.

@@ -24,7 +24,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_utils: ^0.0.1
+  mz_utils: ^1.1.0
 ```
 
 Then run:

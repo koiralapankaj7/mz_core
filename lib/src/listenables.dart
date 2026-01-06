@@ -1103,3 +1103,583 @@ class ListenableMap<K, V> with Controller implements Map<K, V> {
     super.dispose();
   }
 }
+
+/// {@template mz_utils.ListenableNum}
+/// A numeric value wrapper that notifies listeners whenever it is modified.
+///
+/// [ListenableNum] wraps a numeric value ([num], [int], or [double]) and
+/// automatically notifies registered listeners when the value changes through
+/// any mutable operation. It combines numeric operations with Flutter's
+/// `Listenable` pattern for reactive programming.
+///
+/// ## When to Use ListenableNum
+///
+/// Use [ListenableNum] when you need:
+/// * **Reactive UI updates** when a numeric value changes
+/// * **Multiple widgets** listening to the same numeric value
+/// * **Automatic rebuilds** without manual setState calls
+/// * **Observable numeric state** that integrates with Flutter
+///
+/// ## Key Features
+///
+/// * **Numeric operations**: Support for all standard arithmetic operations
+/// * **Automatic notifications**: Every modification triggers listeners
+/// * **Flutter integration**: Works seamlessly with listener patterns
+/// * **Type flexibility**: Works with `num`, `int`, or `double`
+/// * **Previous value tracking**: Access the value before the last change
+///
+/// ## Basic Usage
+///
+/// {@tool snippet}
+/// Create and use a listenable number:
+///
+/// ```dart
+/// final counter = ListenableNum<int>(0);
+///
+/// // Add listener
+/// counter.addListener(() {
+///   print('Counter: ${counter.value}');
+/// });
+///
+/// counter.value = 5;     // Prints: Counter: 5
+/// counter.increment();   // Prints: Counter: 6
+/// counter.add(10);       // Prints: Counter: 16
+/// counter.multiply(2);   // Prints: Counter: 32
+/// ```
+/// {@end-tool}
+///
+/// ## Creating ListenableNum
+///
+/// {@tool snippet}
+/// Create a ListenableNum directly:
+///
+/// ```dart
+/// // Create a ListenableNum
+/// final counter = ListenableNum<int>(0);
+/// final amount = ListenableNum<double>(100.5);
+///
+/// counter.addListener(() => print('Counter: ${counter.value}'));
+/// counter.increment(); // Prints: Counter: 1
+/// ```
+/// {@end-tool}
+///
+/// ## Widget Integration
+///
+/// {@tool snippet}
+/// Use with Flutter widgets:
+///
+/// ```dart
+/// class ScoreWidget extends StatefulWidget {
+///   const ScoreWidget({super.key});
+///
+///   @override
+///   State<ScoreWidget> createState() => _ScoreWidgetState();
+/// }
+///
+/// class _ScoreWidgetState extends State<ScoreWidget> {
+///   final _score = ListenableNum<int>(0);
+///
+///   @override
+///   void initState() {
+///     super.initState();
+///     _score.addListener(_onScoreChanged);
+///   }
+///
+///   void _onScoreChanged() {
+///     setState(() {}); // Rebuild when score changes
+///   }
+///
+///   @override
+///   void dispose() {
+///     _score.dispose();
+///     super.dispose();
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return Column(
+///       children: [
+///         Text('Score: ${_score.value}'),
+///         ElevatedButton(
+///           onPressed: () => _score.add(10),
+///           child: const Text('+10'),
+///         ),
+///       ],
+///     );
+///   }
+/// }
+/// ```
+/// {@end-tool}
+///
+/// ## Arithmetic Operations
+///
+/// {@tool snippet}
+/// Perform arithmetic operations with automatic notifications:
+///
+/// ```dart
+/// final amount = ListenableNum<double>(100.0);
+///
+/// amount.addListener(() => print('Amount: ${amount.value}'));
+///
+/// // Using methods
+/// amount.add(50);        // Amount: 150.0
+/// amount.subtract(25);   // Amount: 125.0
+/// amount.multiply(2);    // Amount: 250.0
+/// amount.divide(5);      // Amount: 50.0
+/// amount.modulo(30);     // Amount: 20.0
+/// ```
+/// {@end-tool}
+///
+/// ## Operator Support
+///
+/// {@tool snippet}
+/// Use standard operators directly on ListenableNum:
+///
+/// ```dart
+/// final counter = ListenableNum<int>(10);
+/// counter.addListener(() => print('Value: ${counter.value}'));
+///
+/// // Arithmetic operators (mutate value and notify)
+/// counter + 5;   // Value: 15
+/// counter - 3;   // Value: 12
+/// counter * 2;   // Value: 24
+/// counter ~/ 3;  // Value: 8
+/// counter % 5;   // Value: 3
+/// -counter;      // Value: -3
+///
+/// // Comparison operators (read-only)
+/// print(counter < 0);   // true
+/// print(counter >= -5); // true
+/// ```
+/// {@end-tool}
+///
+/// ## Previous Value Tracking
+///
+/// {@tool snippet}
+/// Track numeric transitions:
+///
+/// ```dart
+/// final temperature = ListenableNum<double>(20.0);
+///
+/// temperature.addListener(() {
+///   final prev = temperature.prevValue;
+///   final curr = temperature.value;
+///   print('Temperature changed from $prev to $curr');
+/// });
+///
+/// temperature.value = 25.0; // Prints: null to 25.0
+/// temperature.value = 30.0; // Prints: 25.0 to 30.0
+/// ```
+/// {@end-tool}
+///
+/// ## Silent Updates
+///
+/// {@tool snippet}
+/// Update the value without notifying listeners:
+///
+/// ```dart
+/// final counter = ListenableNum<int>(0);
+///
+/// counter.addListener(() => print('Notified'));
+///
+/// counter.add(5);              // Prints: Notified
+/// counter.add(10, silent: true); // No notification
+/// print(counter.value);        // 15
+/// ```
+/// {@end-tool}
+///
+/// ## Performance Considerations
+///
+/// * Listeners are notified on **every** mutation
+/// * For bulk calculations, consider batching updates
+/// * Use `silent` parameter to update without notifications when needed
+/// * Check if value actually changed before setting to avoid
+///   unnecessary notifications
+///
+/// See also:
+///
+/// * [ListenableList], for list collections with change notifications
+/// * [ListenableSet], for set collections with change notifications
+/// * [Controller], the base mixin providing listener functionality
+/// {@endtemplate}
+class ListenableNum<T extends num> with Controller {
+  /// Creates a [ListenableNum] with the given initial [value].
+  ///
+  /// The [value] can be any numeric type ([num], [int], or [double]).
+  ///
+  /// ```dart
+  /// final intCounter = ListenableNum<int>(0);
+  /// final doubleAmount = ListenableNum<double>(0.0);
+  /// final numGeneric = ListenableNum<num>(0);
+  /// ```
+  ListenableNum(T value) : _value = value;
+
+  T _value;
+  T? _prevValue;
+
+  /// Internal helper to update value and notify listeners.
+  /// The cast is unavoidable because Dart's num arithmetic returns num,
+  /// not the specific subtype (int + int returns num, not int).
+  void _update(num newValue, {bool silent = false}) {
+    _prevValue = _value;
+    _value = newValue as T;
+    if (!silent) notifyListeners();
+  }
+
+  /// The current numeric value.
+  ///
+  /// Setting this property updates [prevValue] to the old value and notifies
+  /// all listeners if the new value differs from the current value.
+  ///
+  /// If the new value equals the current [value], no update or notification
+  /// occurs to prevent unnecessary rebuilds.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(0);
+  /// counter.addListener(() => print('Value: ${counter.value}'));
+  ///
+  /// counter.value = 5; // Prints: Value: 5
+  /// counter.value = 5; // No output (same value)
+  ///
+  /// print(counter.prevValue); // 0
+  /// ```
+  T get value => _value;
+
+  set value(T newValue) {
+    if (_value == newValue) return;
+    _prevValue = _value;
+    _value = newValue;
+    notifyListeners();
+  }
+
+  /// The value before the most recent change.
+  ///
+  /// Returns the value that [value] held before the last update. Returns
+  /// `null` if no value changes have occurred yet.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// print(counter.prevValue); // null (no changes yet)
+  ///
+  /// counter.value = 20;
+  /// print(counter.prevValue); // 10
+  ///
+  /// counter.increment();
+  /// print(counter.prevValue); // 20
+  /// ```
+  T? get prevValue => _prevValue;
+
+  /// Whether this has a previous value.
+  ///
+  /// Returns `true` after the first value change, `false` before any changes.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(0);
+  /// print(counter.hasPrevValue); // false
+  ///
+  /// counter.value = 5;
+  /// print(counter.hasPrevValue); // true
+  /// ```
+  bool get hasPrevValue => _prevValue != null;
+
+  /// Adds [amount] to the current value.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// counter.add(5);              // value is now 15
+  /// counter.add(10, silent: true); // value is 25, no notification
+  /// ```
+  void add(T amount, {bool silent = false}) =>
+      _update(_value + amount, silent: silent);
+
+  /// Subtracts [amount] from the current value.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(20);
+  /// counter.subtract(5); // value is now 15
+  /// ```
+  void subtract(T amount, {bool silent = false}) =>
+      _update(_value - amount, silent: silent);
+
+  /// Multiplies the current value by [factor].
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(5);
+  /// counter.multiply(3); // value is now 15
+  /// ```
+  void multiply(T factor, {bool silent = false}) =>
+      _update(_value * factor, silent: silent);
+
+  /// Divides the current value by [divisor].
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// **Note:** The result is cast to type [T]. For integer division, use
+  /// the [~/] operator instead.
+  ///
+  /// ```dart
+  /// final amount = ListenableNum<double>(100.0);
+  /// amount.divide(4); // value is now 25.0
+  /// ```
+  void divide(T divisor, {bool silent = false}) =>
+      _update(_value / divisor, silent: silent);
+
+  /// Sets the value to the remainder of dividing by [divisor].
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(17);
+  /// counter.modulo(5); // value is now 2
+  /// ```
+  void modulo(T divisor, {bool silent = false}) =>
+      _update(_value % divisor, silent: silent);
+
+  /// Increments the value by 1.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(5);
+  /// counter.increment(); // value is now 6
+  /// ```
+  void increment({bool silent = false}) {
+    _prevValue = _value;
+    _value = (_value + 1) as T;
+    if (!silent) notifyListeners();
+  }
+
+  /// Decrements the value by 1.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(5);
+  /// counter.decrement(); // value is now 4
+  /// ```
+  void decrement({bool silent = false}) {
+    _prevValue = _value;
+    _value = (_value - 1) as T;
+    if (!silent) notifyListeners();
+  }
+
+  /// Resets the value to zero (or 0.0 for floating-point types).
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(42);
+  /// counter.reset(); // value is now 0
+  /// ```
+  void reset({bool silent = false}) {
+    if (_value == 0) return;
+    _prevValue = _value;
+    _value = 0 as T;
+    if (!silent) notifyListeners();
+  }
+
+  /// Sets the value to its absolute value.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final amount = ListenableNum<int>(-10);
+  /// amount.abs(); // value is now 10
+  /// ```
+  void abs({bool silent = false}) {
+    final absValue = _value.abs() as T;
+    if (_value == absValue) return;
+    _prevValue = _value;
+    _value = absValue;
+    if (!silent) notifyListeners();
+  }
+
+  /// Sets the value to its negation.
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final amount = ListenableNum<int>(10);
+  /// amount.negate(); // value is now -10
+  /// ```
+  void negate({bool silent = false}) {
+    _prevValue = _value;
+    _value = (-_value) as T;
+    if (!silent) notifyListeners();
+  }
+
+  /// Clamps the value to be within [lowerLimit] and [upperLimit].
+  ///
+  /// If [silent] is `true`, updates the value without notifying listeners.
+  ///
+  /// ```dart
+  /// final value = ListenableNum<int>(15);
+  /// value.clamp(0, 10); // value is now 10
+  /// ```
+  void clamp(T lowerLimit, T upperLimit, {bool silent = false}) {
+    final clamped = _value.clamp(lowerLimit, upperLimit) as T;
+    if (_value == clamped) return;
+    _prevValue = _value;
+    _value = clamped;
+    if (!silent) notifyListeners();
+  }
+
+  // ===== Arithmetic Operators =====
+
+  /// Adds [other] to the current value, updates the value, and notifies
+  /// listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// final result = counter + 5; // value is now 15, result is 15
+  /// ```
+  T operator +(T other) {
+    _prevValue = _value;
+    _value = (_value + other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Subtracts [other] from the current value, updates the value, and notifies
+  /// listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// final result = counter - 3; // value is now 7, result is 7
+  /// ```
+  T operator -(T other) {
+    _prevValue = _value;
+    _value = (_value - other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Multiplies the current value by [other], updates the value, and notifies
+  /// listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// final result = counter * 2; // value is now 20, result is 20
+  /// ```
+  T operator *(T other) {
+    _prevValue = _value;
+    _value = (_value * other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Divides the current value by [other], updates the value, and notifies
+  /// listeners.
+  ///
+  /// **Note:** This performs regular division and casts to [T]. For integer
+  /// types, use [~/] for integer division.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final amount = ListenableNum<double>(100.0);
+  /// final result = amount / 4; // value is now 25.0, result is 25.0
+  /// ```
+  T operator /(T other) {
+    _prevValue = _value;
+    _value = (_value / other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Performs integer division of the current value by [other], updates the
+  /// value, and notifies listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(17);
+  /// final result = counter ~/ 5; // value is now 3, result is 3
+  /// ```
+  T operator ~/(T other) {
+    _prevValue = _value;
+    _value = (_value ~/ other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Sets the value to the remainder of dividing by [other], updates the
+  /// value, and notifies listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(17);
+  /// final result = counter % 5; // value is now 2, result is 2
+  /// ```
+  T operator %(T other) {
+    _prevValue = _value;
+    _value = (_value % other) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  /// Negates the current value, updates the value, and notifies listeners.
+  ///
+  /// Returns the new value.
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// final result = -counter; // value is now -10, result is -10
+  /// ```
+  T operator -() {
+    _prevValue = _value;
+    _value = (-_value) as T;
+    notifyListeners();
+    return _value;
+  }
+
+  // ===== Comparison Operators =====
+
+  /// Returns `true` if the current value is less than [other].
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(5);
+  /// print(counter < 10); // true
+  /// ```
+  bool operator <(T other) => _value < other;
+
+  /// Returns `true` if the current value is less than or equal to [other].
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(5);
+  /// print(counter <= 5); // true
+  /// ```
+  bool operator <=(T other) => _value <= other;
+
+  /// Returns `true` if the current value is greater than [other].
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// print(counter > 5); // true
+  /// ```
+  bool operator >(T other) => _value > other;
+
+  /// Returns `true` if the current value is greater than or equal to [other].
+  ///
+  /// ```dart
+  /// final counter = ListenableNum<int>(10);
+  /// print(counter >= 10); // true
+  /// ```
+  bool operator >=(T other) => _value >= other;
+
+  @override
+  String toString() => '$_value';
+}

@@ -44,6 +44,6 @@ export 'src/auto_dispose.dart';
 export 'src/controller.dart';
 export 'src/controller_watcher.dart';
 export 'src/extensions.dart';
-export 'src/listenable_iterables.dart';
+export 'src/listenables.dart';
 export 'src/simple_logger.dart';
 export 'src/throttler.dart';
