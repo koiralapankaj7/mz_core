@@ -430,15 +430,21 @@ gh api \
 
 ---
 
-## For Your Current dev → main PR
+## Quick Start: Protect Your Main Branch Now
 
-Since you already have a dev branch with changes:
+Follow these steps to protect your `main` branch:
 
-1. ✅ Set up rulesets (run `.github/setup-rulesets.sh`)
-2. ✅ Create PR: <https://github.com/koiralapankaj7/mz_utils/compare/main...dev>
-3. ✅ Wait for CI checks to pass
-4. ✅ Review and merge PR
-5. ✅ After merge, tag v0.0.1 for first release
+1. ✅ **Apply the ruleset** (choose one):
+   - **Option A**: Import via GitHub UI (Settings → Rules → Import ruleset)
+   - **Option B**: Run `./.github/setup-rulesets.sh` (requires `gh` CLI)
+
+2. ✅ **Create your first PR**: <https://github.com/koiralapankaj7/mz_utils/compare/main...dev>
+
+3. ✅ **Wait for CI checks** to pass (Analyze, Test, Package Analysis, Build Example)
+
+4. ✅ **Merge the PR** through GitHub UI
+
+5. ✅ **Tag and release**: After merge, create v0.0.1 tag for first release
 
 ---
 
