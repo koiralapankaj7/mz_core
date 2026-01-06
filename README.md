@@ -3,7 +3,7 @@
 A collection of production-ready Flutter and Dart utilities for state management, logging, collections, and rate limiting.
 
 [![pub package](https://img.shields.io/pub/v/mz_utils.svg)](https://pub.dev/packages/mz_utils)
-[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/koiralapankaj7/mz_utils/branch/main/graph/badge.svg)](https://codecov.io/gh/koiralapankaj7/mz_utils)
 [![CI](https://github.com/koiralapankaj7/mz_utils/workflows/CI/badge.svg)](https://github.com/koiralapankaj7/mz_utils/actions)
 
@@ -481,7 +481,7 @@ Contributions are welcome! Please:
 
 ## License
 
-This package is released under the [BSD-3-Clause License](LICENSE).
+This package is released under the [MIT License](LICENSE).
 
 ## Credits
 

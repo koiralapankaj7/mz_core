@@ -1,9 +1,8 @@
 name: mz_utils
-description: Production-ready Flutter and Dart utilities for state management, logging, observable collections, and rate limiting. Includes controllers, auto-disposal, debouncing, throttling, and useful extensions.
+description: Flutter utilities for state management, logging, collections, and rate limiting with auto-disposal and extensions.
 version: 0.0.1
 repository: https://github.com/koiralapankaj7/mz_utils
 issue_tracker: https://github.com/koiralapankaj7/mz_utils/issues
-documentation: https://pub.dev/documentation/mz_utils/latest/
 
 environment:
   sdk: ^3.0.0
