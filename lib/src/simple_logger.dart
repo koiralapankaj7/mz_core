@@ -101,8 +101,7 @@ enum LogLevel {
   ///
   /// Use for critical errors that require immediate attention or may cause
   /// application termination.
-  fatal(5, color: '\x1B[35m')
-  ;
+  fatal(5, color: '\x1B[35m');
 
   const LogLevel(this.severity, {required this.color});
 
@@ -296,14 +295,14 @@ class LogEntry {
 
   /// Converts the log entry to a JSON map.
   Map<String, dynamic> toJson() => {
-    'name': name,
-    'level': level.name,
-    'timestamp': timestamp.toIso8601String(),
-    if (message != null) 'message': message,
-    if (id != null) 'eventId': id,
-    if (duration != null) 'duration': duration!.inMicroseconds / 1000,
-    ...?metadata,
-  };
+        'name': name,
+        'level': level.name,
+        'timestamp': timestamp.toIso8601String(),
+        if (message != null) 'message': message,
+        if (id != null) 'eventId': id,
+        if (duration != null) 'duration': duration!.inMicroseconds / 1000,
+        ...?metadata,
+      };
 
   @override
   int get hashCode =>
@@ -607,11 +606,11 @@ class SimpleLogger {
     this.sampleRate = 1.0,
     this.groupTimeout = const Duration(minutes: 5),
     this.onError,
-  }) : output = output ?? ConsoleOutput(),
-       assert(
-         sampleRate > 0 && sampleRate <= 1.0,
-         'Sample rate must be 0-1',
-       );
+  })  : output = output ?? ConsoleOutput(),
+        assert(
+          sampleRate > 0 && sampleRate <= 1.0,
+          'Sample rate must be 0-1',
+        );
 
   /// Where to send log output.
   final LogOutput output;
@@ -1103,7 +1102,7 @@ abstract class LogOutput {
 class ConsoleOutput extends LogOutput {
   /// Creates a console output with optional formatter and sanitizer.
   ConsoleOutput({LogFormatter? formatter, super.sanitizer})
-    : formatter = formatter ?? LogFormatter();
+      : formatter = formatter ?? LogFormatter();
 
   /// Formatter for converting log entries to strings.
   final LogFormatter formatter;
@@ -1137,19 +1136,19 @@ class ConsoleOutput extends LogOutput {
         : group;
     final sanitizedEntries = sanitizer != null
         ? entries
-              .map(
-                (e) => LogEntry(
-                  name: e.name,
-                  level: e.level,
-                  timestamp: e.timestamp,
-                  message: sanitizer!.sanitizeText(e.message ?? ''),
-                  id: e.id,
-                  duration: e.duration,
-                  color: e.color,
-                  metadata: e.metadata,
-                ),
-              )
-              .toList()
+            .map(
+              (e) => LogEntry(
+                name: e.name,
+                level: e.level,
+                timestamp: e.timestamp,
+                message: sanitizer!.sanitizeText(e.message ?? ''),
+                id: e.id,
+                duration: e.duration,
+                color: e.color,
+                metadata: e.metadata,
+              ),
+            )
+            .toList()
         : entries;
     final formatted = formatter.formatGroup(sanitizedGroup, sanitizedEntries);
     debugPrint(formatted);
@@ -1163,7 +1162,7 @@ class ConsoleOutput extends LogOutput {
 class FileOutput extends LogOutput {
   /// Creates a file output with the given file sink.
   FileOutput(this.file, {LogFormatter? formatter, super.sanitizer})
-    : formatter = formatter ?? LogFormatter();
+      : formatter = formatter ?? LogFormatter();
 
   /// The file sink to write to.
   final IOSink file;
@@ -1200,19 +1199,19 @@ class FileOutput extends LogOutput {
         : group;
     final sanitizedEntries = sanitizer != null
         ? entries
-              .map(
-                (e) => LogEntry(
-                  name: e.name,
-                  level: e.level,
-                  timestamp: e.timestamp,
-                  message: sanitizer!.sanitizeText(e.message ?? ''),
-                  id: e.id,
-                  duration: e.duration,
-                  color: e.color,
-                  metadata: e.metadata,
-                ),
-              )
-              .toList()
+            .map(
+              (e) => LogEntry(
+                name: e.name,
+                level: e.level,
+                timestamp: e.timestamp,
+                message: sanitizer!.sanitizeText(e.message ?? ''),
+                id: e.id,
+                duration: e.duration,
+                color: e.color,
+                metadata: e.metadata,
+              ),
+            )
+            .toList()
         : entries;
     final formatted = formatter.formatGroup(sanitizedGroup, sanitizedEntries);
     file.writeln(formatted);
@@ -1283,19 +1282,19 @@ class BufferedFileOutput extends LogOutput {
         : group;
     final sanitizedEntries = sanitizer != null
         ? entries
-              .map(
-                (e) => LogEntry(
-                  name: e.name,
-                  level: e.level,
-                  timestamp: e.timestamp,
-                  message: sanitizer!.sanitizeText(e.message ?? ''),
-                  id: e.id,
-                  duration: e.duration,
-                  color: e.color,
-                  metadata: e.metadata,
-                ),
-              )
-              .toList()
+            .map(
+              (e) => LogEntry(
+                name: e.name,
+                level: e.level,
+                timestamp: e.timestamp,
+                message: sanitizer!.sanitizeText(e.message ?? ''),
+                id: e.id,
+                duration: e.duration,
+                color: e.color,
+                metadata: e.metadata,
+              ),
+            )
+            .toList()
         : entries;
     final formatted = formatter.formatGroup(sanitizedGroup, sanitizedEntries);
     _buffer.add(formatted);
@@ -1393,19 +1392,19 @@ class RotatingFileOutput extends LogOutput {
         : group;
     final sanitizedEntries = sanitizer != null
         ? entries
-              .map(
-                (e) => LogEntry(
-                  name: e.name,
-                  level: e.level,
-                  timestamp: e.timestamp,
-                  message: sanitizer!.sanitizeText(e.message ?? ''),
-                  id: e.id,
-                  duration: e.duration,
-                  color: e.color,
-                  metadata: e.metadata,
-                ),
-              )
-              .toList()
+            .map(
+              (e) => LogEntry(
+                name: e.name,
+                level: e.level,
+                timestamp: e.timestamp,
+                message: sanitizer!.sanitizeText(e.message ?? ''),
+                id: e.id,
+                duration: e.duration,
+                color: e.color,
+                metadata: e.metadata,
+              ),
+            )
+            .toList()
         : entries;
     final formatted = formatter.formatGroup(sanitizedGroup, sanitizedEntries);
     _writeToFile(formatted);
@@ -1479,9 +1478,8 @@ class RotatingFileOutput extends LogOutput {
 
   /// Opens the current log file for writing.
   void _openCurrentFile() {
-    final filePath = _currentFileIndex == 0
-        ? basePath
-        : '$basePath.$_currentFileIndex';
+    final filePath =
+        _currentFileIndex == 0 ? basePath : '$basePath.$_currentFileIndex';
     _currentFile = File(filePath).openWrite(mode: FileMode.append);
   }
 
@@ -1560,7 +1558,9 @@ class AsyncLogger extends SimpleLogger {
 
 class _LogTask {
   _LogTask.entry(this.entry, this.groupId) : isEntry = true;
-  _LogTask.completeGroup(this.groupId) : isEntry = false, entry = null;
+  _LogTask.completeGroup(this.groupId)
+      : isEntry = false,
+        entry = null;
 
   final bool isEntry;
   final LogEntry? entry;
@@ -1955,10 +1955,10 @@ class LogFormatter {
     LogFormatterSymbols? symbols,
     bool autoDetectWidth = true,
     bool? enableColors,
-  }) : frameLength =
-           frameLength ?? (autoDetectWidth ? detectTerminalWidth() : 80),
-       symbols = symbols ?? const LogFormatterSymbols(),
-       _enableColors = enableColors ?? detectColorSupport();
+  })  : frameLength =
+            frameLength ?? (autoDetectWidth ? detectTerminalWidth() : 80),
+        symbols = symbols ?? const LogFormatterSymbols(),
+        _enableColors = enableColors ?? detectColorSupport();
 
   /// Maximum line width for formatting.
   final int frameLength;
@@ -2030,8 +2030,7 @@ class LogFormatter {
 
   /// Formats a single log entry into a string.
   String formatEntry(LogEntry entry) {
-    final message =
-        (entry.message ?? '') +
+    final message = (entry.message ?? '') +
         (entry.duration != null
             ? ' (${entry.duration!.inMicroseconds / 1000} ms)'
             : '');
@@ -2145,9 +2144,8 @@ class LogFormatter {
     for (final text in strings) {
       var start = 0;
       while (start < text.length) {
-        var end = start + chunkSize > text.length
-            ? text.length
-            : start + chunkSize;
+        var end =
+            start + chunkSize > text.length ? text.length : start + chunkSize;
         if (end < text.length) {
           final lastSpace = text.lastIndexOf(' ', end);
           // Only use lastSpace if it's greater than start

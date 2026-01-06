@@ -111,7 +111,7 @@ git commit -m "quick fix"
 git push origin fix/quick-fix
 
 # Then create PR on GitHub
-# Wait for CI checks (Analyze, Test, Package Analysis, Build Example)
+# Wait for CI checks (Analyze, Test, Package Analysis)
 # Merge through GitHub UI only
 ```
 
@@ -129,7 +129,6 @@ The `main-protection.json` ruleset enforces:
      - ✅ `Analyze` - Code formatting and analysis
      - ✅ `Test` - Test suite with coverage
      - ✅ `Package Analysis` - pub.dev quality scoring
-     - ✅ `Build Example App` - Example app compilation
 
 3. **No Force Pushes** (`"type": "non_fast_forward"`)
    - Prevents `git push --force`
@@ -176,7 +175,6 @@ git push origin feat/add-new-utility
 #   - Analyze ✅ (dart analyze passes)
 #   - Test ✅ (475+ tests pass)
 #   - Package Analysis ✅ (pana score good)
-#   - Build Example ✅ (example app builds)
 
 # 5. All checks pass → Merge button enabled
 # 6. Merge PR (squash and merge)
@@ -244,7 +242,6 @@ The ruleset in `.github/rulesets/main-protection.json` protects the `main` branc
   - `Analyze` (code formatting and analysis)
   - `Test` (test suite with coverage)
   - `Package Analysis` (pub.dev scoring)
-  - `Build Example App` (example app compilation)
 
 ### Additional Protections
 
@@ -281,7 +278,7 @@ If you prefer to configure the ruleset from scratch instead of importing the JSO
        - Require conversation resolution: Yes
      ✓ Require status checks to pass
        - Require branches to be up to date: Yes
-       - Status checks: Analyze, Test, Package Analysis, Build Example App
+       - Status checks: Analyze, Test, Package Analysis
      ✓ Block force pushes
      ✓ Require linear history
    ```
@@ -319,7 +316,6 @@ Add additional required checks:
       {"context": "Analyze"},
       {"context": "Test"},
       {"context": "Package Analysis"},
-      {"context": "Build Example App"},
       {"context": "Security Scan"}  // Add new check
     ]
   }
@@ -387,7 +383,7 @@ git push origin feature/my-feature
 # 4. Create PR on GitHub
 # Visit: <https://github.com/koiralapankaj7/mz_utils/compare>
 
-# 5. Wait for CI checks to pass (Analyze, Test, Package Analysis, Build Example)
+# 5. Wait for CI checks to pass (Analyze, Test, Package Analysis)
 
 # 6. Merge PR (through GitHub UI)
 
@@ -445,7 +441,7 @@ Follow these steps to protect your `main` branch:
 
 2. ✅ **Create your first PR**: <https://github.com/koiralapankaj7/mz_utils/compare/main...dev>
 
-3. ✅ **Wait for CI checks** to pass (Analyze, Test, Package Analysis, Build Example)
+3. ✅ **Wait for CI checks** to pass (Analyze, Test, Package Analysis)
 
 4. ✅ **Merge the PR** through GitHub UI
 

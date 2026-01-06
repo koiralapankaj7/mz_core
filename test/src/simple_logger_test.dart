@@ -198,25 +198,24 @@ void main() {
     });
 
     test('should filter by minimum level', () {
-      logger =
-          SimpleLogger(
-              output: _TestOutput(output),
-              minimumLevel: LogLevel.warning,
-            )
-            ..logEntry(
-              LogEntry(
-                name: 'test',
-                level: LogLevel.info,
-                timestamp: DateTime.now(),
-              ),
-            )
-            ..logEntry(
-              LogEntry(
-                name: 'test',
-                level: LogLevel.warning,
-                timestamp: DateTime.now(),
-              ),
-            );
+      logger = SimpleLogger(
+        output: _TestOutput(output),
+        minimumLevel: LogLevel.warning,
+      )
+        ..logEntry(
+          LogEntry(
+            name: 'test',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        )
+        ..logEntry(
+          LogEntry(
+            name: 'test',
+            level: LogLevel.warning,
+            timestamp: DateTime.now(),
+          ),
+        );
 
       expect(output, hasLength(1)); // Only warning logged
     });
@@ -277,25 +276,24 @@ void main() {
     });
 
     test('should filter entries when filter returns true', () {
-      logger =
-          SimpleLogger(
-              output: _TestOutput(output),
-              filter: (entry, group) => entry.name == 'filtered',
-            )
-            ..logEntry(
-              LogEntry(
-                name: 'filtered',
-                level: LogLevel.info,
-                timestamp: DateTime.now(),
-              ),
-            )
-            ..logEntry(
-              LogEntry(
-                name: 'allowed',
-                level: LogLevel.info,
-                timestamp: DateTime.now(),
-              ),
-            );
+      logger = SimpleLogger(
+        output: _TestOutput(output),
+        filter: (entry, group) => entry.name == 'filtered',
+      )
+        ..logEntry(
+          LogEntry(
+            name: 'filtered',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        )
+        ..logEntry(
+          LogEntry(
+            name: 'allowed',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        );
 
       expect(output, hasLength(1));
     });
@@ -303,17 +301,16 @@ void main() {
     test('should handle error via onError callback', () {
       Object? caughtError;
       final failingOutput = _FailingOutput();
-      logger =
-          SimpleLogger(
-            output: failingOutput,
-            onError: (error, st) => caughtError = error,
-          )..logEntry(
-            LogEntry(
-              name: 'test',
-              level: LogLevel.info,
-              timestamp: DateTime.now(),
-            ),
-          );
+      logger = SimpleLogger(
+        output: failingOutput,
+        onError: (error, st) => caughtError = error,
+      )..logEntry(
+          LogEntry(
+            name: 'test',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        );
 
       expect(caughtError, isA<Exception>());
     });
@@ -382,20 +379,19 @@ void main() {
 
     test('should auto-complete group after timeout', () async {
       const group = LogGroup(id: 'g1', title: 'Test', description: 'Desc');
-      logger =
-          SimpleLogger(
-              output: _TestOutput(output),
-              groupTimeout: const Duration(milliseconds: 100),
-            )
-            ..startGroup(group)
-            ..logEntry(
-              LogEntry(
-                name: 'e1',
-                level: LogLevel.info,
-                timestamp: DateTime.now(),
-              ),
-              groupId: 'g1',
-            );
+      logger = SimpleLogger(
+        output: _TestOutput(output),
+        groupTimeout: const Duration(milliseconds: 100),
+      )
+        ..startGroup(group)
+        ..logEntry(
+          LogEntry(
+            name: 'e1',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+          groupId: 'g1',
+        );
 
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
@@ -959,19 +955,18 @@ void main() {
     });
 
     test('should handle sanitization in buffered output', () async {
-      output =
-          BufferedFileOutput(
-            sink,
-            bufferSize: 10,
-            sanitizer: const LogSanitizer(),
-          )..writeEntry(
-            LogEntry(
-              name: 'test',
-              level: LogLevel.info,
-              timestamp: DateTime.now(),
-              message: 'password: secret',
-            ),
-          );
+      output = BufferedFileOutput(
+        sink,
+        bufferSize: 10,
+        sanitizer: const LogSanitizer(),
+      )..writeEntry(
+          LogEntry(
+            name: 'test',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+            message: 'password: secret',
+          ),
+        );
 
       await output.flush();
 
@@ -1017,17 +1012,16 @@ void main() {
     test('should rethrow error when flush fails', () async {
       // Test line 580: rethrow in catch block
       final throwingSink = _ThrowingIOSink();
-      final throwingOutput =
-          BufferedFileOutput(
-            throwingSink,
-            bufferSize: 2,
-          )..writeEntry(
-            LogEntry(
-              name: 'e1',
-              level: LogLevel.info,
-              timestamp: DateTime.now(),
-            ),
-          );
+      final throwingOutput = BufferedFileOutput(
+        throwingSink,
+        bufferSize: 2,
+      )..writeEntry(
+          LogEntry(
+            name: 'e1',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        );
 
       // Calling flush() directly will throw and rethrow at line 580
       try {
@@ -1150,17 +1144,16 @@ void main() {
     test('should handle errors in async processing', () async {
       Object? caughtError;
       final failingOutput = _FailingOutput();
-      logger =
-          AsyncLogger(
-            output: failingOutput,
-            onError: (error, st) => caughtError = error,
-          )..logEntry(
-            LogEntry(
-              name: 'test',
-              level: LogLevel.info,
-              timestamp: DateTime.now(),
-            ),
-          );
+      logger = AsyncLogger(
+        output: failingOutput,
+        onError: (error, st) => caughtError = error,
+      )..logEntry(
+          LogEntry(
+            name: 'test',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+        );
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
@@ -2254,27 +2247,26 @@ void main() {
       // Start a group and add an entry
       // Keep logger in scope to prevent garbage collection before timeout fires
       // ignore: unused_local_variable
-      final logger =
-          SimpleLogger(
-              output: _TestOutput(output),
-              groupTimeout: const Duration(milliseconds: 50),
-              onError: (e, st) => errorsCaught.add(e),
-            )
-            ..startGroup(
-              const LogGroup(
-                id: 'timeout-group',
-                title: 'Test',
-                description: '',
-              ),
-            )
-            ..logEntry(
-              LogEntry(
-                name: 'entry1',
-                level: LogLevel.info,
-                timestamp: DateTime.now(),
-              ),
-              groupId: 'timeout-group',
-            );
+      final logger = SimpleLogger(
+        output: _TestOutput(output),
+        groupTimeout: const Duration(milliseconds: 50),
+        onError: (e, st) => errorsCaught.add(e),
+      )
+        ..startGroup(
+          const LogGroup(
+            id: 'timeout-group',
+            title: 'Test',
+            description: '',
+          ),
+        )
+        ..logEntry(
+          LogEntry(
+            name: 'entry1',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+          ),
+          groupId: 'timeout-group',
+        );
 
       // Wait for timeout to trigger
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -2347,20 +2339,19 @@ void main() {
     test('should sanitize RotatingFileOutput writeEntry', () async {
       final tempDir = await Directory.systemTemp.createTemp('test_');
       const sanitizer = LogSanitizer();
-      final output =
-          RotatingFileOutput(
-            '${tempDir.path}/test.log',
-            sanitizer: sanitizer,
-            maxSizeBytes: 1000,
-            bufferSize: 1,
-          )..writeEntry(
-            LogEntry(
-              name: 'e1',
-              level: LogLevel.info,
-              timestamp: DateTime.now(),
-              message: 'password: secret123',
-            ),
-          );
+      final output = RotatingFileOutput(
+        '${tempDir.path}/test.log',
+        sanitizer: sanitizer,
+        maxSizeBytes: 1000,
+        bufferSize: 1,
+      )..writeEntry(
+          LogEntry(
+            name: 'e1',
+            level: LogLevel.info,
+            timestamp: DateTime.now(),
+            message: 'password: secret123',
+          ),
+        );
 
       await output.flush();
       await output.dispose();
@@ -2427,9 +2418,9 @@ void main() {
       final output = <String>[];
       // Add an entry so the group will be written when completed
       SimpleLogger(
-          output: _TestOutput(output),
-          groupTimeout: const Duration(milliseconds: 50),
-        )
+        output: _TestOutput(output),
+        groupTimeout: const Duration(milliseconds: 50),
+      )
         ..startGroup(
           const LogGroup(id: 'g1', title: 'Test', description: ''),
         )
@@ -2457,20 +2448,19 @@ void main() {
         // completeGroup. When the timer fires and calls completeGroup,
         // it will throw and the catch block at line 165 will catch the error
         final errorsCaught = <Object>[];
-        final logger =
-            _ThrowingLogger(
-                output: _TestOutput([]),
-                groupTimeout: const Duration(milliseconds: 20),
-                onError: (e, st) => errorsCaught.add(e),
-              )
-              // Start a group - timer will fire after 20ms
-              ..startGroup(
-                const LogGroup(
-                  id: 'test',
-                  title: 'Test',
-                  description: '',
-                ),
-              );
+        final logger = _ThrowingLogger(
+          output: _TestOutput([]),
+          groupTimeout: const Duration(milliseconds: 20),
+          onError: (e, st) => errorsCaught.add(e),
+        )
+          // Start a group - timer will fire after 20ms
+          ..startGroup(
+            const LogGroup(
+              id: 'test',
+              title: 'Test',
+              description: '',
+            ),
+          );
 
         // Wait for timer to fire and trigger the error
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -2594,16 +2584,15 @@ void main() {
       () async {
         final errorsCaught = <Object>[];
         final output = <String>[];
-        final logger =
-            AsyncLogger(
-                output: _TestOutput(output),
-                onError: (e, st) => errorsCaught.add(e),
-              )
-              // Try to complete a group that doesn't exist
-              // This queues a completeGroup task for processing
-              // When processed, super.completeGroup will throw Exception
-              // which is caught by the error handler
-              ..completeGroup('non-existent-group');
+        final logger = AsyncLogger(
+          output: _TestOutput(output),
+          onError: (e, st) => errorsCaught.add(e),
+        )
+          // Try to complete a group that doesn't exist
+          // This queues a completeGroup task for processing
+          // When processed, super.completeGroup will throw Exception
+          // which is caught by the error handler
+          ..completeGroup('non-existent-group');
 
         // Wait for async processing
         // Line 790 catch block should catch the error

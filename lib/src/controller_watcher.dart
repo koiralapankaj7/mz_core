@@ -14,7 +14,7 @@ import 'package:mz_utils/src/controller.dart';
 /// can be garbage collected even if cleanup logic misses it.
 class _ControllerWatcher<T extends Controller> {
   _ControllerWatcher(BuildContext context)
-    : _elementRef = WeakReference(context as Element);
+      : _elementRef = WeakReference(context as Element);
 
   final WeakReference<Element> _elementRef;
   T? _controller;
@@ -113,15 +113,14 @@ class _WatcherRegistry {
 
     // Get or create watcher for this element and attach to controller
     (group.putIfAbsent(element, () {
-              return _ControllerWatcher<T>(context);
-            })
-            as _ControllerWatcher<T>)
+      return _ControllerWatcher<T>(context);
+    }) as _ControllerWatcher<T>)
         .attach(
-          controller,
-          key: key,
-          predicate: predicate,
-          priority: priority,
-        );
+      controller,
+      key: key,
+      predicate: predicate,
+      priority: priority,
+    );
 
     // Schedule cleanup check
     scheduleMicrotask(() => _cleanupDeadWatchers(controller));
@@ -359,9 +358,8 @@ extension ControllerWatchSimpleExtension<T extends Controller> on T {
         final newValue = selector(this);
         // Check if value exists in storage (don't capture isFirst!)
         final hadValue = _WatcherRegistry._selectedValues.containsKey(element);
-        final oldValue = hadValue
-            ? _WatcherRegistry._selectedValues[element] as R?
-            : null;
+        final oldValue =
+            hadValue ? _WatcherRegistry._selectedValues[element] as R? : null;
         final shouldRebuild = !hadValue || oldValue != newValue;
         _WatcherRegistry._selectedValues[element] = newValue;
         return shouldRebuild;
@@ -381,12 +379,15 @@ extension ControllerWatchSimpleExtension<T extends Controller> on T {
 abstract final class WatcherDebug {
   /// Print current state of all watchers (debug mode only)
   static void printWatchers() {
-    assert(() {
-      // Debug output showing all active watchers for troubleshooting
-      // ignore: avoid_print
-      print(_WatcherRegistry.debugDescribe());
-      return true;
-    }(), 'Debug assertion for watcher state output',);
+    assert(
+      () {
+        // Debug output showing all active watchers for troubleshooting
+        // ignore: avoid_print
+        print(_WatcherRegistry.debugDescribe());
+        return true;
+      }(),
+      'Debug assertion for watcher state output',
+    );
   }
 
   /// Get watcher count for a specific controller

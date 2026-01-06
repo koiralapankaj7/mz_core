@@ -67,16 +67,7 @@ This is your main quality gate. It runs 6 parallel jobs:
 
 **Purpose**: Checks if your package meets pub.dev quality standards (gives you a score out of 140).
 
-#### Job 4: **Build Example**
-
-```yaml
-- Install dependencies
-- cd example && flutter build apk --debug  # Build Android app
-```
-
-**Purpose**: Ensures the example app compiles successfully.
-
-#### Job 5: **Dependency Review** (PR only)
+#### Job 4: **Dependency Review** (PR only)
 
 ```yaml
 - Reviews dependencies changed in PR
@@ -85,7 +76,7 @@ This is your main quality gate. It runs 6 parallel jobs:
 
 **Purpose**: Security - alerts if a PR introduces a vulnerable dependency.
 
-#### Job 6: **Security** (Trivy Scanner)
+#### Job 5: **Security** (Trivy Scanner)
 
 ```yaml
 - Scan filesystem for vulnerabilities

@@ -5,8 +5,7 @@ class RateLimitingDemoScreen extends StatefulWidget {
   const RateLimitingDemoScreen({super.key});
 
   @override
-  State<RateLimitingDemoScreen> createState() =>
-      _RateLimitingDemoScreenState();
+  State<RateLimitingDemoScreen> createState() => _RateLimitingDemoScreenState();
 }
 
 class _RateLimitingDemoScreenState extends State<RateLimitingDemoScreen> {

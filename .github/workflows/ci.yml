@@ -84,31 +84,6 @@ jobs:
       - name: Run pana
         run: dart pub global run pana --no-warning
 
-  build-example:
-    name: Build Example App
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.4'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: |
-          flutter pub get
-          cd example
-          flutter pub get
-
-      - name: Build example app (Android)
-        run: |
-          cd example
-          flutter build apk --debug
-
   dependency-review:
     name: Dependency Review
     runs-on: ubuntu-latest

@@ -1318,9 +1318,12 @@ void main() {
         // Notify with key AND includeGlobalListeners
         // This forces the merge path which has error handling
         controller
-          ..addListener(() {
-            throw Exception('Test error');
-          }, priority: 1,)
+          ..addListener(
+            () {
+              throw Exception('Test error');
+            },
+            priority: 1,
+          )
           ..addListener(() => successCount++, key: 'test')
           ..notify('test');
 

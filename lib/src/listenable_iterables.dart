@@ -181,7 +181,7 @@ class ListenableList<E> with Controller implements List<E> {
 
   /// Creates a listenable list from an iterable.
   ListenableList.fromIterable(Iterable<E> iterable)
-    : _list = List<E>.from(iterable);
+      : _list = List<E>.from(iterable);
 
   late final List<E> _list;
 
@@ -710,7 +710,7 @@ class ListenableSet<E> with Controller implements Set<E> {
 
   /// Creates a listenable set from an iterable.
   ListenableSet.fromIterable(Iterable<E> iterable)
-    : _set = Set<E>.from(iterable);
+      : _set = Set<E>.from(iterable);
   late final Set<E> _set;
 
   @override
@@ -962,7 +962,7 @@ class ListenableMap<K, V> with Controller implements Map<K, V> {
 
   /// Creates a listenable map from map entries.
   ListenableMap.fromEntries(Iterable<MapEntry<K, V>> entries)
-    : _map = Map<K, V>.fromEntries(entries);
+      : _map = Map<K, V>.fromEntries(entries);
   late final Map<K, V> _map;
 
   @override

@@ -118,9 +118,8 @@ Result: $notFound (not in set)
       'HTTPSConnection',
     ];
 
-    final results = examples
-        .map((e) => '$e -> ${e.toCapitalizedWords()}')
-        .join('\n');
+    final results =
+        examples.map((e) => '$e -> ${e.toCapitalizedWords()}').join('\n');
 
     _stringResult = '''
 toCapitalizedWords():
@@ -138,9 +137,8 @@ $results
       3.14159,
     ];
 
-    final results = examples
-        .map((n) => '$n -> ${n.toStringAsFixedFloor(2)}')
-        .join('\n');
+    final results =
+        examples.map((n) => '$n -> ${n.toStringAsFixedFloor(2)}').join('\n');
 
     _numResult = '''
 toStringAsFixedFloor(2):

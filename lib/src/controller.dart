@@ -23,12 +23,11 @@ typedef KvCallback = void Function(Object? key, Object? value);
 ///
 /// Used for listeners that need access to the full context including the
 /// property [key], its [value], and the [controller] instance.
-typedef KvcCallback<C extends Controller> =
-    void Function(
-      Object? key,
-      Object? value,
-      C controller,
-    );
+typedef KvcCallback<C extends Controller> = void Function(
+  Object? key,
+  Object? value,
+  C controller,
+);
 
 /// Predicate function to filter listener notifications.
 ///
@@ -92,7 +91,7 @@ class CListener {
 /// Merge listener for handling multiple listeners as one
 class _MergeListener extends CListener {
   const _MergeListener(this.listeners)
-    : super(_noOp, priority: 0, predicate: null);
+      : super(_noOp, priority: 0, predicate: null);
 
   static void _noOp() {}
   final List<CListener> listeners;
@@ -607,8 +606,8 @@ mixin class Controller implements ChangeNotifier {
   ///
   /// Throws a [FlutterError] if no controller of type [T] is found.
   static T ofType<T extends Controller>(BuildContext context) {
-    final model = context
-        .dependOnInheritedWidgetOfExactType<_ControllerModel<T>>();
+    final model =
+        context.dependOnInheritedWidgetOfExactType<_ControllerModel<T>>();
     if (model == null) {
       throw FlutterError(
         'Unable to find Controller of type $T.\n'
@@ -923,7 +922,7 @@ mixin class Controller implements ChangeNotifier {
 
 class _MergingController extends Controller {
   _MergingController(Iterable<Listenable?> controllers)
-    : _controllers = controllers.whereType<Listenable>().toList();
+      : _controllers = controllers.whereType<Listenable>().toList();
 
   final List<Listenable> _controllers;
 

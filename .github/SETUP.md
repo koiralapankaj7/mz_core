@@ -40,11 +40,6 @@ The repository includes comprehensive CI/CD automation with:
 - Run pub.dev scoring tool
 - Ensures package meets pub.dev standards
 
-#### Build Example
-
-- Builds the example Android app
-- Verifies example app compiles successfully
-
 #### Dependency Review (PR only)
 
 - Reviews dependency changes in PRs
