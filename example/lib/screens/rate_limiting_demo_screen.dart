@@ -18,12 +18,12 @@ class _RateLimitingDemoScreenState extends State<RateLimitingDemoScreen> {
   void dispose() {
     _debounceSearchController.dispose();
     _throttleController.dispose();
-    EasyDebounce.cancelAll();
+    Debouncer.cancelAll();
     super.dispose();
   }
 
   void _handleSearch(String value) {
-    EasyDebounce.debounce(
+    Debouncer.debounce(
       'search',
       const Duration(milliseconds: 500),
       () {

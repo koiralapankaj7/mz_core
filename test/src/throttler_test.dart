@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mz_utils/src/throttler.dart';
 
 void main() {
-  group('EasyDebounce Tests |', () {
-    tearDown(EasyDebounce.cancelAll);
+  group('Debouncer Tests |', () {
+    tearDown(Debouncer.cancelAll);
 
     test('should debounce callback execution', () async {
       var executed = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () => executed = true,
@@ -30,7 +30,7 @@ void main() {
       var firstExecuted = false;
       var secondExecuted = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () => firstExecuted = true,
@@ -39,7 +39,7 @@ void main() {
       // Call again with same tag before first completes
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () => secondExecuted = true,
@@ -56,7 +56,7 @@ void main() {
     test('should execute immediately when duration is zero', () {
       var executed = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         Duration.zero,
         () => executed = true,
@@ -69,33 +69,33 @@ void main() {
     test('should fire callback immediately', () {
       var executed = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () => executed = true,
       );
 
       // Fire immediately
-      EasyDebounce.fire('test');
+      Debouncer.fire('test');
 
       expect(executed, isTrue);
     });
 
     test('should not error when firing non-existent tag', () {
-      expect(() => EasyDebounce.fire('nonexistent'), returnsNormally);
+      expect(() => Debouncer.fire('nonexistent'), returnsNormally);
     });
 
     test('should cancel debounce operation', () async {
       var executed = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () => executed = true,
       );
 
       // Cancel before execution
-      EasyDebounce.cancel('test');
+      Debouncer.cancel('test');
 
       // Wait to ensure it doesn't execute
       await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -104,27 +104,27 @@ void main() {
     });
 
     test('should not error when cancelling non-existent tag', () {
-      expect(() => EasyDebounce.cancel('nonexistent'), returnsNormally);
+      expect(() => Debouncer.cancel('nonexistent'), returnsNormally);
     });
 
     test('should cancel all debounce operations', () async {
       var first = false;
       var second = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'first',
         const Duration(milliseconds: 100),
         () => first = true,
       );
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'second',
         const Duration(milliseconds: 100),
         () => second = true,
       );
 
       // Cancel all
-      EasyDebounce.cancelAll();
+      Debouncer.cancelAll();
 
       // Wait to ensure neither executes
       await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -134,47 +134,47 @@ void main() {
     });
 
     test('should count active operations', () {
-      expect(EasyDebounce.count(), 0);
+      expect(Debouncer.count(), 0);
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'first',
         const Duration(milliseconds: 100),
         () {},
       );
 
-      expect(EasyDebounce.count(), 1);
+      expect(Debouncer.count(), 1);
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'second',
         const Duration(milliseconds: 100),
         () {},
       );
 
-      expect(EasyDebounce.count(), 2);
+      expect(Debouncer.count(), 2);
 
-      EasyDebounce.cancel('first');
+      Debouncer.cancel('first');
 
-      expect(EasyDebounce.count(), 1);
+      expect(Debouncer.count(), 1);
 
-      EasyDebounce.cancelAll();
+      Debouncer.cancelAll();
 
-      expect(EasyDebounce.count(), 0);
+      expect(Debouncer.count(), 0);
     });
 
     test('should check if operation is active', () {
-      expect(EasyDebounce.isActive('test'), isFalse);
+      expect(Debouncer.isActive('test'), isFalse);
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () {},
       );
 
-      expect(EasyDebounce.isActive('test'), isTrue);
+      expect(Debouncer.isActive('test'), isTrue);
 
-      EasyDebounce.cancel('test');
+      Debouncer.cancel('test');
 
-      expect(EasyDebounce.isActive('test'), isFalse);
+      expect(Debouncer.isActive('test'), isFalse);
     });
 
     test('should handle multiple operations with different tags', () async {
@@ -182,19 +182,19 @@ void main() {
       var second = false;
       var third = false;
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'first',
         const Duration(milliseconds: 50),
         () => first = true,
       );
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'second',
         const Duration(milliseconds: 100),
         () => second = true,
       );
 
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'third',
         const Duration(milliseconds: 150),
         () => third = true,

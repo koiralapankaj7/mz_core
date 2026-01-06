@@ -22,15 +22,15 @@ void main() {
 
     test('should access static methods', () {
       // Verify static classes are accessible
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () {},
       );
-      expect(EasyDebounce.count(), greaterThan(0));
+      expect(Debouncer.count(), greaterThan(0));
 
-      EasyDebounce.cancelAll();
-      expect(EasyDebounce.count(), equals(0));
+      Debouncer.cancelAll();
+      expect(Debouncer.count(), equals(0));
     });
   });
 }

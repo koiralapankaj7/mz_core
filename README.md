@@ -151,7 +151,7 @@ class SearchWidget extends StatefulWidget {
     return TextField(
       onChanged: (query) {
         // Only search after user stops typing for 500ms
-        EasyDebounce.debounce(
+        Debouncer.debounce(
           'search',
           const Duration(milliseconds: 500),
           () => performSearch(query),
@@ -272,7 +272,7 @@ Production-ready logging system:
 
 Control function execution frequency:
 
-- **EasyDebounce**: Execute after calls stop (search-as-you-type)
+- **Debouncer**: Execute after calls stop (search-as-you-type)
 - **Throttler**: Limit execution frequency (scroll events)
 - **AdvanceDebouncer**: Type-safe async debouncing with cancellation
 
@@ -318,7 +318,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
-    EasyDebounce.cancel('search');
+    Debouncer.cancel('search');
     _results.dispose();
     super.dispose();
   }
@@ -350,7 +350,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.all(16),
             child: TextField(
               onChanged: (query) {
-                EasyDebounce.debounce(
+                Debouncer.debounce(
                   'search',
                   const Duration(milliseconds: 500),
                   () => _search(query),

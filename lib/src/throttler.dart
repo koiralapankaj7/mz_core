@@ -6,23 +6,23 @@ import 'package:flutter/material.dart';
 ///
 /// This is equivalent to [VoidCallback] but defined here to avoid importing
 /// dart:ui just for the type definition.
-typedef EasyDebounceCallback = void Function();
+typedef DebouncerCallback = void Function();
 
 /// A debounce-able function that takes a parameter and returns a Future.
 ///
 /// Used by [AdvanceDebouncer] for type-safe async debouncing operations.
 typedef Debounceable<S, T> = Future<S?> Function(T parameter);
 
-class _EasyDebounceOperation {
-  _EasyDebounceOperation(this.callback, this.timer);
-  EasyDebounceCallback callback;
+class _DebouncerOperation {
+  _DebouncerOperation(this.callback, this.timer);
+  DebouncerCallback callback;
   Timer timer;
 }
 
-/// {@template mz_utils.EasyDebounce}
+/// {@template mz_utils.Debouncer}
 /// Static utility class for debouncing function calls.
 ///
-/// [EasyDebounce] delays function execution until calls stop for a specified
+/// [Debouncer] delays function execution until calls stop for a specified
 /// duration. If another call happens before the duration expires, the timer
 /// resets.
 ///
@@ -42,7 +42,7 @@ class _EasyDebounceOperation {
 /// ```dart
 /// TextField(
 ///   onChanged: (query) {
-///     EasyDebounce.debounce(
+///     Debouncer.debounce(
 ///       'search',
 ///       const Duration(milliseconds: 500),
 ///       () => performSearch(query),
@@ -59,10 +59,10 @@ class _EasyDebounceOperation {
 ///
 /// ```dart
 /// // Search debouncer
-/// EasyDebounce.debounce('search', duration, () => search());
+/// Debouncer.debounce('search', duration, () => search());
 ///
 /// // Save debouncer (independent)
-/// EasyDebounce.debounce('save', duration, () => save());
+/// Debouncer.debounce('save', duration, () => save());
 /// ```
 /// {@end-tool}
 ///
@@ -74,9 +74,9 @@ class _EasyDebounceOperation {
 /// ```dart
 /// @override
 /// void dispose() {
-///   EasyDebounce.cancel('search');
+///   Debouncer.cancel('search');
 ///   // Or cancel all
-///   EasyDebounce.cancelAll();
+///   Debouncer.cancelAll();
 ///   super.dispose();
 /// }
 /// ```
@@ -87,12 +87,12 @@ class _EasyDebounceOperation {
 /// * [Throttler], which limits execution frequency instead of delaying
 /// * [AdvanceDebouncer], which provides type-safe async debouncing
 /// {@endtemplate}
-abstract class EasyDebounce {
-  static final Map<String, _EasyDebounceOperation> _operations = {};
+abstract class Debouncer {
+  static final Map<String, _DebouncerOperation> _operations = {};
 
   /// Delays execution of [onExecute] until calls stop for [duration].
   ///
-  /// {@macro mz_utils.EasyDebounce}
+  /// {@macro mz_utils.Debouncer}
   ///
   /// Each call with the same [tag] cancels any previous pending operation and
   /// starts a new timer. The callback only executes after [duration] passes
@@ -109,7 +109,7 @@ abstract class EasyDebounce {
   ///
   /// ```dart
   /// void onSearchChanged(String query) {
-  ///   EasyDebounce.debounce(
+  ///   Debouncer.debounce(
   ///     'api-search',
   ///     const Duration(milliseconds: 300),
   ///     () async {
@@ -123,14 +123,14 @@ abstract class EasyDebounce {
   static void debounce(
     String tag,
     Duration duration,
-    EasyDebounceCallback onExecute,
+    DebouncerCallback onExecute,
   ) {
     _operations[tag]?.timer.cancel();
     if (duration == Duration.zero) {
       _operations.remove(tag);
       onExecute();
     } else {
-      _operations[tag] = _EasyDebounceOperation(
+      _operations[tag] = _DebouncerOperation(
         onExecute,
         Timer(duration, () {
           _operations[tag]?.timer.cancel();
@@ -162,7 +162,7 @@ abstract class EasyDebounce {
   /// ```dart
   /// @override
   /// void dispose() {
-  ///   EasyDebounce.cancel('search');
+  ///   Debouncer.cancel('search');
   ///   super.dispose();
   /// }
   /// ```
@@ -183,7 +183,7 @@ abstract class EasyDebounce {
   /// ```dart
   /// @override
   /// void dispose() {
-  ///   EasyDebounce.cancelAll();
+  ///   Debouncer.cancelAll();
   ///   super.dispose();
   /// }
   /// ```
@@ -211,7 +211,7 @@ abstract class EasyDebounce {
   /// Check if debounce is active:
   ///
   /// ```dart
-  /// if (EasyDebounce.isActive('save')) {
+  /// if (Debouncer.isActive('save')) {
   ///   showIndicator('Saving...');
   /// }
   /// ```
@@ -352,7 +352,7 @@ abstract class EasyDebounce {
 ///
 /// See also:
 ///
-/// * [EasyDebounce], which delays execution until calls stop
+/// * [Debouncer], which delays execution until calls stop
 /// * [AdvanceDebouncer], which provides type-safe async debouncing
 /// {@endtemplate}
 class Throttler {
@@ -565,19 +565,19 @@ class Throttler {
 /// Advanced debouncer with type-safe async support.
 ///
 /// Provides type-safe debouncing for async operations with generic type
-/// parameters. Unlike [EasyDebounce], which works with void callbacks,
+/// parameters. Unlike [Debouncer], which works with void callbacks,
 /// [AdvanceDebouncer] handles async functions that return values and
 /// maintains full type safety throughout.
 ///
 /// ## When to Use AdvanceDebouncer
 ///
-/// Use [AdvanceDebouncer] instead of [EasyDebounce] when you need:
+/// Use [AdvanceDebouncer] instead of [Debouncer] when you need:
 /// * **Type-safe async operations** with return values
 /// * **Cancellation of in-flight requests** when new calls arrive
 /// * **Null return values** when operations are cancelled
 /// * **Generic type parameters** for compile-time safety
 ///
-/// Use [EasyDebounce] for simple void callbacks without return values.
+/// Use [Debouncer] for simple void callbacks without return values.
 ///
 /// ## Key Features
 ///
@@ -711,7 +711,7 @@ class Throttler {
 ///
 /// See also:
 ///
-/// * [EasyDebounce], for simple void callback debouncing
+/// * [Debouncer], for simple void callback debouncing
 /// * [Throttler], which limits execution frequency instead of delaying
 /// * [Debounceable], the function type used by this debouncer
 /// {@endtemplate}

@@ -206,7 +206,7 @@ class SearchWidget extends StatefulWidget {
 class _SearchWidgetState extends State<SearchWidget> {
   void _onSearchChanged(String query) {
     // Debounce: Only execute after user stops typing for 500ms
-    EasyDebounce.debounce(
+    Debouncer.debounce(
       'search-query',
       const Duration(milliseconds: 500),
       () {
@@ -218,7 +218,7 @@ class _SearchWidgetState extends State<SearchWidget> {
 
   @override
   void dispose() {
-    EasyDebounce.cancel('search-query');
+    Debouncer.cancel('search-query');
     super.dispose();
   }
 

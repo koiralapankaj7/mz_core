@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-01-06
+
+### Changed
+
+**BREAKING CHANGE: Renamed `EasyDebounce` to `Debouncer`**
+
+- `EasyDebounce` class renamed to `Debouncer` for better naming consistency with `AdvanceDebouncer` and `Throttler`
+- `EasyDebouncerCallback` typedef renamed to `DebouncerCallback`
+- All documentation and examples updated to use new naming
+
+**Migration Guide:**
+
+Replace all occurrences of `EasyDebounce` with `Debouncer` in your code:
+
+```dart
+// Before (v0.0.1)
+EasyDebounce.debounce('tag', duration, callback);
+EasyDebounce.cancel('tag');
+EasyDebounce.cancelAll();
+
+// After (v1.0.0)
+Debouncer.debounce('tag', duration, callback);
+Debouncer.cancel('tag');
+Debouncer.cancelAll();
+```
+
 ## [0.0.1] - 2025-01-05
 
 ### Added
@@ -38,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Minimum level controls for production filtering
 
 **Rate Limiting**
-- `EasyDebounce` for simple debouncing (search-as-you-type)
+- `Debouncer` for simple debouncing (search-as-you-type)
 - `Throttler` for limiting execution frequency (scroll events, button presses)
 - `AdvanceDebouncer` for type-safe async debouncing with cancellation
 - Configurable durations and immediate execution options
@@ -75,4 +101,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub repository and issue tracker
 - pub.dev integration
 
+[1.0.0]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v1.0.0
 [0.0.1]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v0.0.1

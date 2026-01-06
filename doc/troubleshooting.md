@@ -341,7 +341,7 @@ final output = FileOutput(file.openWrite());
 ```dart
 // ❌ Bad - different tags = no debouncing
 for (var i = 0; i < 10; i++) {
-  EasyDebounce.debounce(
+  Debouncer.debounce(
     'tag-$i',  // Different tag each time!
     duration,
     () => print(i),
@@ -350,7 +350,7 @@ for (var i = 0; i < 10; i++) {
 
 // ✓ Good - same tag = proper debouncing
 for (var i = 0; i < 10; i++) {
-  EasyDebounce.debounce(
+  Debouncer.debounce(
     'search',  // Same tag
     duration,
     () => print(i),
@@ -367,7 +367,7 @@ for (var i = 0; i < 10; i++) {
 ```dart
 // If calls happen faster than duration:
 while (true) {
-  EasyDebounce.debounce('tag', duration, callback);
+  Debouncer.debounce('tag', duration, callback);
   await Future.delayed(Duration(milliseconds: 100));
   // If duration is 500ms, callback never executes!
 }
@@ -375,7 +375,7 @@ while (true) {
 
 **Solution**: Ensure calls eventually stop, or use throttle instead.
 
-### Issue: Memory leak from EasyDebounce
+### Issue: Memory leak from Debouncer
 
 **Symptom**: Memory grows when using many tags.
 
@@ -386,14 +386,14 @@ while (true) {
 ```dart
 @override
 void dispose() {
-  EasyDebounce.cancel('my-tag');  // ✓ Clean up
+  Debouncer.cancel('my-tag');  // ✓ Clean up
   super.dispose();
 }
 
 // Or cancel all
 @override
 void dispose() {
-  EasyDebounce.cancelAll();
+  Debouncer.cancelAll();
   super.dispose();
 }
 ```
@@ -557,7 +557,7 @@ controller.addListener(
 
 ```dart
 controller.addListener(() {
-  EasyDebounce.debounce(
+  Debouncer.debounce(
     'ui-update',
     const Duration(milliseconds: 16),  // ~60fps
     () => setState(() {}),
@@ -634,7 +634,7 @@ If your issue isn't covered here:
 
 ### Debounce/Throttle
 
-- EasyDebounce uses static state (can't easily test in isolation)
+- Debouncer uses static state (can't easily test in isolation)
 - Throttler immediate mode executes synchronously (can't be async)
 
 ## Performance Tips

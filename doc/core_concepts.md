@@ -490,7 +490,7 @@ final output = RotatingFileOutput(
 **Mental Model**: "Wait for things to calm down, then act"
 
 ```dart
-EasyDebounce.debounce(
+Debouncer.debounce(
   'search',
   const Duration(milliseconds: 500),
   () => performSearch(query),
