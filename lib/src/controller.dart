@@ -424,7 +424,6 @@ class _SortedListMerger {
 /// | Key-based notifications | ❌ | ✅ |
 /// | Priority listeners | ❌ | ✅ |
 /// | Predicate filtering | ❌ | ✅ |
-/// | Batch updates | ❌ | ✅ |
 /// | Multiple callback signatures | ❌ | ✅ |
 /// | Memory efficiency | ✅ Best (~8KB) |
 /// ✅ Very Good (~12KB) |
@@ -549,26 +548,11 @@ class _SortedListMerger {
 /// ```
 /// {@end-tool}
 ///
-/// ## Batch Updates
-///
-/// {@tool snippet}
-/// Group multiple updates into one notification:
-///
-/// ```dart
-/// controller.batch(() {
-///   controller.updateName('Alice');
-///   controller.updateEmail('alice@example.com');
-///   controller.updateAge(30);
-/// }); // Single notification at the end
-/// ```
-/// {@end-tool}
-///
 /// ## Performance Tips
 ///
 /// 1. **Use key-based notifications** for selective rebuilds (biggest win)
 /// 2. **Use simple VoidCallbacks** when possible (no priority/predicate overhead)
-/// 3. **Use batch()** for multiple related updates
-/// 4. **Use predicates** to filter unnecessary notifications
+/// 3. **Use predicates** to filter unnecessary notifications
 ///
 /// ## Implementation Details
 ///
@@ -604,22 +588,84 @@ mixin class Controller implements ChangeNotifier {
 
   /// Finds a controller of type [T] in the widget tree.
   ///
+  /// ## The `listen` Parameter
+  ///
+  /// When [listen] is `true` (default), the widget registers a dependency on
+  /// the controller and rebuilds when the controller is replaced in the tree.
+  ///
+  /// **Set [listen] to `false` when accessing the controller from callbacks**,
+  /// such as `onPressed`, `onTap`, or other event handlers. This avoids
+  /// unnecessary rebuilds and follows the same pattern as `Provider.of`.
+  ///
+  /// ```dart
+  /// // In build method - use listen: true (default)
+  /// final controller = Controller.ofType<MyController>(context);
+  ///
+  /// // In callbacks - use listen: false
+  /// ElevatedButton(
+  ///   onPressed: () {
+  ///     final controller = Controller.ofType<MyController>(
+  ///       context,
+  ///       listen: false,
+  ///     );
+  ///     controller.submit();
+  ///   },
+  ///   child: const Text('Submit'),
+  /// )
+  /// ```
+  ///
   /// Throws a [FlutterError] if no controller of type [T] is found.
-  static T ofType<T extends Controller>(BuildContext context) {
-    final model =
-        context.dependOnInheritedWidgetOfExactType<_ControllerModel<T>>();
-    if (model == null) {
+  static T ofType<T extends Controller>(
+    BuildContext context, {
+    bool listen = true,
+  }) {
+    final controller = maybeOfType<T>(context, listen: listen);
+    if (controller == null) {
       throw FlutterError(
         'Unable to find Controller of type $T.\n'
         'Make sure that a ControllerProvider<$T> '
         'exists above this context.',
       );
     }
-    return model.controller;
+    return controller;
   }
 
   /// Finds a controller of type [T] in the widget tree, or null if not found.
-  static T? maybeOfType<T extends Controller>(BuildContext context) {
+  ///
+  /// ## The `listen` Parameter
+  ///
+  /// When [listen] is `true` (default), the widget registers a dependency on
+  /// the controller and rebuilds when the controller is replaced in the tree.
+  ///
+  /// **Set [listen] to `false` when accessing the controller from callbacks**,
+  /// such as `onPressed`, `onTap`, or other event handlers. This avoids
+  /// unnecessary rebuilds and follows the same pattern as `Provider.of`.
+  ///
+  /// ```dart
+  /// // In build method - use listen: true (default)
+  /// final controller = Controller.maybeOfType<MyController>(context);
+  ///
+  /// // In callbacks - use listen: false
+  /// GestureDetector(
+  ///   onTap: () {
+  ///     final controller = Controller.maybeOfType<MyController>(
+  ///       context,
+  ///       listen: false,
+  ///     );
+  ///     controller?.performAction();
+  ///   },
+  ///   child: const Text('Tap me'),
+  /// )
+  /// ```
+  static T? maybeOfType<T extends Controller>(
+    BuildContext context, {
+    bool listen = true,
+  }) {
+    if (!listen) {
+      final state =
+          context.findAncestorStateOfType<_ControllerProviderState<T>>();
+      return state?._controller;
+    }
     return context
         .dependOnInheritedWidgetOfExactType<_ControllerModel<T>>()
         ?.controller;
@@ -654,8 +700,6 @@ mixin class Controller implements ChangeNotifier {
   final _keyListeners = <Object, _ListenerSet>{};
   bool _isDisposed = false;
   bool _creationDispatched = false;
-  int _batchDepth = 0;
-  bool _pendingNotification = false;
 
   /// Whether this controller has been disposed.
   bool get isDisposed => _isDisposed;
@@ -763,11 +807,6 @@ mixin class Controller implements ChangeNotifier {
     bool includeGlobalListeners = true,
   }) {
     if (_isDisposed) return;
-
-    if (_batchDepth > 0) {
-      _pendingNotification = true;
-      return;
-    }
 
     // FAST PATH 1: No key, just global listeners
     if (key == null) {
@@ -894,20 +933,6 @@ mixin class Controller implements ChangeNotifier {
     }
   }
 
-  /// Batch multiple updates
-  void batch(VoidCallback updates) {
-    _batchDepth++;
-    try {
-      updates();
-    } finally {
-      _batchDepth--;
-      if (_batchDepth == 0 && _pendingNotification) {
-        _pendingNotification = false;
-        notifyListeners();
-      }
-    }
-  }
-
   /// Dispose controller
   @override
   void dispose() {
@@ -917,8 +942,338 @@ mixin class Controller implements ChangeNotifier {
   }
 }
 
-// ... Rest of the implementation (ControllerProvider, ControllerBuilder, etc.)
-// Copying from v2_optimized to keep API identical
+/// {@template mz_utils.ValueController}
+/// A controller that holds a single value and implements [ValueListenable].
+///
+/// [ValueController] combines the features of [Controller] with Flutter's
+/// [ValueListenable] interface, making it ideal for state management that
+/// integrates seamlessly with Flutter widgets like [ValueListenableBuilder].
+///
+/// ## Key Features
+///
+/// - **Value tracking**: Maintains current and previous values
+/// - **Conditional updates**: Only notifies when value actually changes
+/// - **Previous value**: Access the value before the last change
+/// - **Silent updates**: Update value without triggering notifications
+/// - **ValueListenable integration**: Works with [ValueListenableBuilder]
+///
+/// ## Basic Usage
+///
+/// {@tool snippet}
+/// Create a controller and listen to value changes:
+///
+/// ```dart
+/// final counter = ValueController<int>(0);
+///
+/// // Listen to changes
+/// counter.addListener(() {
+///   print('Count: ${counter.value}');
+/// });
+///
+/// counter.value = 5; // Prints: Count: 5
+/// counter.value = 5; // No notification (same value)
+/// ```
+/// {@end-tool}
+///
+/// ## Integration with Flutter Widgets
+///
+/// {@tool snippet}
+/// Use with [ValueListenableBuilder] for reactive UI updates:
+///
+/// ```dart
+/// class CounterWidget extends StatefulWidget {
+///   const CounterWidget({super.key});
+///
+///   @override
+///   State<CounterWidget> createState() => _CounterWidgetState();
+/// }
+///
+/// class _CounterWidgetState extends State<CounterWidget> {
+///   final _counter = ValueController<int>(0);
+///
+///   @override
+///   void dispose() {
+///     _counter.dispose();
+///     super.dispose();
+///   }
+///
+///   @override
+///   Widget build(BuildContext context) {
+///     return ValueListenableBuilder<int>(
+///       valueListenable: _counter,
+///       builder: (context, count, child) {
+///         return Text('Count: $count');
+///       },
+///     );
+///   }
+/// }
+/// ```
+/// {@end-tool}
+///
+/// ## Previous Value Tracking
+///
+/// {@tool snippet}
+/// Track state transitions by accessing the previous value:
+///
+/// ```dart
+/// final status = ValueController<String>('idle');
+///
+/// status.addListener(() {
+///   print('Status changed from '
+///       '${status.prevValue} to ${status.value}');
+/// });
+///
+/// status.value = 'loading'; // Prints: null to loading
+/// status.value = 'success'; // Prints: loading to success
+/// ```
+/// {@end-tool}
+///
+/// ## Silent Updates
+///
+/// {@tool snippet}
+/// Update the value without notifying listeners:
+///
+/// ```dart
+/// final controller = ValueController<int>(0);
+///
+/// controller.addListener(() => print('Notified'));
+///
+/// controller.onChanged(5); // Prints: Notified
+/// controller.onChanged(10, silent: true); // No notification
+/// ```
+/// {@end-tool}
+///
+/// See also:
+///
+/// * [Controller], the base mixin providing listener management
+/// * [ValueListenable], the Flutter interface this class implements
+/// * [ValueListenableBuilder], a widget that rebuilds when value changes
+/// {@endtemplate}
+class ValueController<T> with Controller implements ValueListenable<T> {
+  /// Creates a [ValueController] with the given initial [value].
+  ///
+  /// The [value] parameter becomes the initial [value] and can be of any type.
+  /// The controller starts with no [prevValue] (it will be `null`).
+  ///
+  /// {@tool snippet}
+  /// Create controllers for different types:
+  ///
+  /// ```dart
+  /// final counter = ValueController<int>(0);
+  /// final name = ValueController<String>('Alice');
+  /// final nullable = ValueController<int?>(null);
+  /// ```
+  /// {@end-tool}
+  ValueController(T value) : _value = value;
+
+  T _value;
+  T? _prevValue;
+
+  /// Updates the value and optionally notifies listeners.
+  ///
+  /// Returns `true` if the value changed, `false` if [newValue] equals the
+  /// current [value]. When the value changes, [prevValue] is updated to the
+  /// old value before [value] is set to [newValue].
+  ///
+  /// The [silent] parameter controls whether listeners are notified:
+  /// - `false` (default): Notifies all listeners when value changes
+  /// - `true`: Updates value without notifying listeners
+  ///
+  /// The [key] parameter allows notifying only specific key-based listeners,
+  /// inherited from [Controller.notifyListeners].
+  ///
+  /// **Note:** No notification occurs if [newValue] equals current [value],
+  /// regardless of the [silent] parameter.
+  ///
+  /// {@tool snippet}
+  /// Using onChanged with return value and silent updates:
+  ///
+  /// ```dart
+  /// final controller = ValueController<int>(0);
+  /// controller.addListener(() => print('Changed'));
+  ///
+  /// controller.onChanged(5); // Prints: Changed, returns true
+  /// controller.onChanged(5); // No output, returns false (same value)
+  ///
+  /// // Silent update
+  /// controller.onChanged(10, silent: true); // Returns true, no print
+  /// print(controller.value); // 10
+  /// ```
+  /// {@end-tool}
+  bool onChanged(
+    T newValue, {
+    bool silent = false,
+    String? debugKey,
+    Object? key,
+  }) {
+    if (_value == newValue) return false;
+    _prevValue = _value;
+    _value = newValue;
+    if (!silent) notifyListeners(debugKey: debugKey, key: key);
+    return true;
+  }
+
+  /// The current value stored by this controller.
+  ///
+  /// Setting this property updates [prevValue] to the old value and notifies
+  /// all listeners if the new value differs from the current value.
+  ///
+  /// If [newValue] equals the current [value], no update or notification
+  /// occurs. This prevents unnecessary rebuilds in listening widgets.
+  ///
+  /// {@tool snippet}
+  /// Setting the value and tracking changes:
+  ///
+  /// ```dart
+  /// final controller = ValueController<int>(0);
+  /// controller.addListener(() => print('Value: ${controller.value}'));
+  ///
+  /// controller.value = 5; // Prints: Value: 5
+  /// controller.value = 5; // No output (same value)
+  ///
+  /// print(controller.prevValue); // 0
+  /// ```
+  /// {@end-tool}
+  ///
+  /// See also:
+  ///
+  /// * [onChanged], for updates with more control over notifications
+  /// * [prevValue], to access the value before the last change
+  set value(T newValue) {
+    if (_value == newValue) return;
+    _prevValue = _value;
+    _value = newValue;
+    notifyListeners();
+  }
+
+  /// Whether this controller has a previous value.
+  ///
+  /// Returns `true` after the first value change, `false` before any changes.
+  ///
+  /// **Note:** For nullable types (e.g., `ValueController<int?>`), this
+  /// returns `false` if [prevValue] is `null`, even after a value change.
+  /// Use this to distinguish "no previous value" from "previous value was
+  /// `null`".
+  ///
+  /// {@tool snippet}
+  /// Checking for previous values:
+  ///
+  /// ```dart
+  /// final controller = ValueController<int>(0);
+  /// print(controller.hasPrevValue); // false
+  ///
+  /// controller.value = 5;
+  /// print(controller.hasPrevValue); // true
+  ///
+  /// // Nullable type example
+  /// final nullable = ValueController<int?>(null);
+  /// nullable.value = 10;
+  /// print(nullable.hasPrevValue); // false (prevValue is null)
+  ///
+  /// nullable.value = 20;
+  /// print(nullable.hasPrevValue); // true (prevValue is 10)
+  /// ```
+  /// {@end-tool}
+  bool get hasPrevValue => _prevValue != null;
+
+  /// The current value stored by this controller.
+  ///
+  /// This implements the [ValueListenable.value] getter, allowing
+  /// [ValueController] to work with Flutter's [ValueListenableBuilder]
+  /// and other widgets that accept [ValueListenable].
+  ///
+  /// {@tool snippet}
+  /// Using the value getter:
+  ///
+  /// ```dart
+  /// final controller = ValueController<String>('Hello');
+  /// print(controller.value); // Hello
+  ///
+  /// // Use with ValueListenableBuilder
+  /// ValueListenableBuilder<String>(
+  ///   valueListenable: controller,
+  ///   builder: (context, value, child) => Text(value),
+  /// )
+  /// ```
+  /// {@end-tool}
+  @override
+  T get value => _value;
+
+  /// The value before the most recent change.
+  ///
+  /// Returns the value that [value] held before the last update via [value]
+  /// setter or [onChanged]. Returns `null` if no value changes have occurred
+  /// yet.
+  ///
+  /// **Note:** For nullable types, `null` can mean either "no previous value"
+  /// or "the previous value was `null`". Use [hasPrevValue] to distinguish
+  /// these cases.
+  ///
+  /// {@tool snippet}
+  /// Accessing previous values:
+  ///
+  /// ```dart
+  /// final controller = ValueController<int>(0);
+  /// print(controller.prevValue); // null (no changes yet)
+  ///
+  /// controller.value = 5;
+  /// print(controller.prevValue); // 0
+  ///
+  /// controller.value = 10;
+  /// print(controller.prevValue); // 5
+  ///
+  /// // Setting same value doesn't update prevValue
+  /// controller.value = 10;
+  /// print(controller.prevValue); // Still 5
+  /// ```
+  /// {@end-tool}
+  T? get prevValue => _prevValue;
+
+  /// Notifies all registered listeners.
+  ///
+  /// This override automatically passes the current [value] to listeners that
+  /// accept value parameters. If a custom [value] is provided, it is used
+  /// instead of the controller's current [value].
+  ///
+  /// The [key] parameter notifies only listeners registered for that specific
+  /// key. The [includeGlobalListeners] parameter controls whether keyless
+  /// listeners are also notified when a [key] is provided.
+  ///
+  /// **Note:** This method is called automatically by [value] setter and
+  /// [onChanged]. Manual calls are rarely needed.
+  ///
+  /// {@tool snippet}
+  /// Manually notifying listeners with keys:
+  ///
+  /// ```dart
+  /// final controller = ValueController<int>(42);
+  ///
+  /// controller.addListener((key, value) {
+  ///   print('Key: $key, Value: $value');
+  /// }, key: 'test');
+  ///
+  /// controller.notifyListeners(key: 'test');
+  /// // Prints: Key: test, Value: 42
+  ///
+  /// controller.notifyListeners(value: 100, key: 'test');
+  /// // Prints: Key: test, Value: 100
+  /// ```
+  /// {@end-tool}
+  @override
+  void notifyListeners({
+    String? debugKey,
+    Object? key,
+    Object? value,
+    bool includeGlobalListeners = true,
+  }) {
+    super.notifyListeners(
+      debugKey: debugKey,
+      key: key,
+      value: value ?? _value,
+      includeGlobalListeners: includeGlobalListeners,
+    );
+  }
+}
 
 class _MergingController extends Controller {
   _MergingController(Iterable<Listenable?> controllers)

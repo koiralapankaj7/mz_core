@@ -1,0 +1,68 @@
+name: Version Sync Check
+
+on:
+  pull_request:
+    paths:
+      - 'pubspec.yaml'
+      - 'README.md'
+      - 'doc/getting_started.md'
+
+jobs:
+  check-version-consistency:
+    name: Check Version Consistency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract versions
+        id: versions
+        run: |
+          # Extract version from pubspec.yaml
+          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          echo "pubspec=$PUBSPEC_VERSION" >> $GITHUB_OUTPUT
+
+          # Extract version from README.md
+          README_VERSION=$(grep 'mz_utils: \^' README.md | sed 's/.*mz_utils: \^//' | head -1 | tr -d ' ')
+          echo "readme=$README_VERSION" >> $GITHUB_OUTPUT
+
+          # Extract version from doc/getting_started.md
+          DOCS_VERSION=$(grep 'mz_utils: \^' doc/getting_started.md | sed 's/.*mz_utils: \^//' | head -1 | tr -d ' ')
+          echo "docs=$DOCS_VERSION" >> $GITHUB_OUTPUT
+
+          # Print for debugging
+          echo "pubspec.yaml version: $PUBSPEC_VERSION"
+          echo "README.md version: $README_VERSION"
+          echo "doc/getting_started.md version: $DOCS_VERSION"
+
+      - name: Verify versions match
+        run: |
+          PUBSPEC="${{ steps.versions.outputs.pubspec }}"
+          README="${{ steps.versions.outputs.readme }}"
+          DOCS="${{ steps.versions.outputs.docs }}"
+
+          ERRORS=0
+
+          if [ "$PUBSPEC" != "$README" ]; then
+            echo "::error file=README.md::Version mismatch! pubspec.yaml has $PUBSPEC but README.md has $README"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          if [ "$PUBSPEC" != "$DOCS" ]; then
+            echo "::error file=doc/getting_started.md::Version mismatch! pubspec.yaml has $PUBSPEC but doc/getting_started.md has $DOCS"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          if [ $ERRORS -gt 0 ]; then
+            echo ""
+            echo "❌ Version sync check failed!"
+            echo ""
+            echo "Expected version: $PUBSPEC (from pubspec.yaml)"
+            echo "README.md has: $README"
+            echo "doc/getting_started.md has: $DOCS"
+            echo ""
+            echo "Please update all files to use version $PUBSPEC"
+            exit 1
+          fi
+
+          echo "✅ All versions are in sync: $PUBSPEC"

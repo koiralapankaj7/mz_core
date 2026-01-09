@@ -1,0 +1,15 @@
+# =============================================================================
+# act configuration for running GitHub Actions locally
+# This setup works for both Flutter and Dart-only projects
+# =============================================================================
+
+# Use catthehacker/ubuntu:act-latest which includes Node.js
+# This allows all JavaScript-based GitHub Actions to work properly:
+# - subosito/flutter-action, dart-lang/setup-dart, codecov/codecov-action, etc.
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+
+# For Apple Silicon Macs - run x86_64 containers via Rosetta
+--container-architecture linux/amd64
+
+# Reuse containers for faster subsequent runs (use --rm to force fresh)
+--reuse

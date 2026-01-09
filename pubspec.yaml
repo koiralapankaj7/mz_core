@@ -1,12 +1,11 @@
 name: mz_utils
 description: Flutter utilities for state management, logging, collections, and rate limiting with auto-disposal and extensions.
-version: 0.0.1
+version: 1.2.0
 repository: https://github.com/koiralapankaj7/mz_utils
 issue_tracker: https://github.com/koiralapankaj7/mz_utils/issues
 
 environment:
-  sdk: ^3.0.0
-  flutter: ">=3.38.0"
+  sdk: ^3.3.0
 
 dependencies:
   flutter:

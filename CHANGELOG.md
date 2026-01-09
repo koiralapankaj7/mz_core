@@ -5,11 +5,106 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.0.1] - 2025-01-05
+## [1.2.0] - 2026-01-09
+
+### Added in 1.2.0
+
+#### Memoization Utilities
+
+- `Memoizer` static class for tag-based caching of async results (consistent with `Debouncer` API)
+  - `Memoizer.run(tag, computation)` - cache async results by tag
+  - `Memoizer.getValue(tag)` / `hasValue(tag)` / `isPending(tag)` - check cache state
+  - `Memoizer.clear(tag)` / `clearAll()` - invalidate cache
+  - TTL (time-to-live) support for automatic cache expiration
+  - In-flight request deduplication using `Completer` (concurrent calls share the same computation)
+  - `forceRefresh` parameter to bypass cache
+  - Dynamic tags for key-based caching: `Memoizer.run('product-$id', ...)`
+
+#### Debouncer Async API
+
+- `Debouncer.debounceAsync<S, T>()` for typed async debouncing with return values
+- `Debouncer.fireAsync<S, T>()` for immediate execution of async debounced functions
+- Merged functionality from AdvanceDebouncer into Debouncer
+
+#### Controller Lookup Enhancements
+
+- `listen` parameter added to `Controller.ofType()` and `Controller.maybeOfType()`
+  - `listen: true` (default) - widget rebuilds when controller is replaced
+  - `listen: false` - use in callbacks (`onPressed`, `onTap`) to avoid unnecessary rebuilds
+  - Follows the same pattern as `Provider.of(context, listen: false)`
+
+### Removed in 1.2.0
+
+- **AdvanceDebouncer** class removed - use `Debouncer.debounceAsync()` instead
+- **`batch()` method** removed from Controller - batch updates feature removed
+
+### Changed in 1.2.0
+
+- `Debouncer.cancel()`, `cancelAll()`, `count()`, `isActive()` now handle both sync and async operations
+- Renamed `simple_logger.dart` to `logger.dart` for better naming consistency
+- Renamed `controller_watcher.dart` to `watcher.dart` for brevity
+
+## [1.1.0] - 2026-01-06
 
 ### Added
 
-**State Management**
+#### Controller Extensions
+
+- `derive()` method on `Controller` for creating derived `ValueController` instances
+  - Automatically updates when source controller changes
+  - `distinct` parameter to control notification behavior (default: true)
+  - `autoDispose` parameter for automatic cleanup when listeners are removed (default: true)
+  - Safe to use with `ValueListenableBuilder` - auto-cleans up on widget unmount
+
+#### ListenableNum Improvements
+
+- `ListenableNum` class for observable numeric values with arithmetic operations
+- Arithmetic operators (`+`, `-`, `*`, `/`, `~/`, `%`, unary `-`) now return the computed value `T` for easier chaining
+
+### Changed
+
+#### Controller Extension Renaming
+
+- Renamed `ControllerWatchSimpleExtension` to `ControllerMZX` for consistency
+- Improved documentation for `watch()`, `select()`, and `derive()` methods with `{@tool snippet}` directives
+
+#### Listenables
+
+- Renamed `listenable_iterables.dart` to `listenables.dart` for better naming
+- Enhanced `ValueController` documentation with Flutter SDK standard patterns
+
+## [1.0.0] - 2026-01-06
+
+### Changed in 1.0.0
+
+#### BREAKING CHANGE: Renamed `EasyDebounce` to `Debouncer`
+
+- `EasyDebounce` class renamed to `Debouncer` for better naming consistency with `AdvanceDebouncer` and `Throttler`
+- `EasyDebouncerCallback` typedef renamed to `DebouncerCallback`
+- All documentation and examples updated to use new naming
+
+#### Migration Guide
+
+Replace all occurrences of `EasyDebounce` with `Debouncer` in your code:
+
+```dart
+// Before (v0.0.1)
+EasyDebounce.debounce('tag', duration, callback);
+EasyDebounce.cancel('tag');
+EasyDebounce.cancelAll();
+
+// After (v1.0.0)
+Debouncer.debounce('tag', duration, callback);
+Debouncer.cancel('tag');
+Debouncer.cancelAll();
+```
+
+## [0.0.1] - 2025-01-05
+
+### Added in 0.0.1
+
+#### State Management
+
 - `Controller` mixin for type-safe state management with automatic lifecycle handling
 - `ControllerBuilder` widget for reactive UI updates
 - `ControllerProvider` widget for dependency injection
@@ -18,18 +113,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Priority listeners for ordered notification execution
 - Predicate-based filtering for conditional notifications
 
-**Auto-Disposal**
+#### Auto-Disposal
+
 - `AutoDispose` mixin for automatic resource cleanup
 - LIFO (last-in-first-out) cleanup order
 - Support for Stream, Timer, and custom resource disposal
 
-**Observable Collections**
+#### Observable Collections
+
 - `ListenableList<T>` - observable list with full `List` API
 - `ListenableSet<T>` - observable set with full `Set` API
 - Automatic listener notification on collection modifications
 - Direct replacement for standard Dart collections
 
-**Structured Logging**
+#### Structured Logging
+
 - `SimpleLogger` with six severity levels (trace, debug, info, warning, error, fatal)
 - Log groups for organizing related entries
 - Multiple output formats: Console, File, JSON, Rotating files
@@ -37,13 +135,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sampling and filtering capabilities
 - Minimum level controls for production filtering
 
-**Rate Limiting**
-- `EasyDebounce` for simple debouncing (search-as-you-type)
+#### Rate Limiting
+
+- `Debouncer` for simple debouncing (search-as-you-type)
 - `Throttler` for limiting execution frequency (scroll events, button presses)
 - `AdvanceDebouncer` for type-safe async debouncing with cancellation
 - Configurable durations and immediate execution options
 
-**Extension Methods**
+#### Extension Methods
+
 - `IterableMZX`: `toMap()`, `toIndexedMap()`, `firstWhereWithIndexOrNull()`, and more
 - `ListMZX`: `removeFirstWhere()`, `removeLastWhere()`, `swap()`
 - `SetMZX`: `toggle()`, `replaceAll()`
@@ -52,7 +152,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NumMZX`: `clampToInt()`, `roundToPlaces()`
 - `WidgetMZX`: `padding()`, `center()`, `expanded()`, `visible()`
 
-**Documentation**
+#### Documentation
+
 - Comprehensive README with quick start guide
 - Getting Started guide with step-by-step integration
 - Core Concepts documentation explaining architecture
@@ -60,7 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Full API documentation with examples
 - Contributing guidelines
 
-**Example App**
+#### Example App
+
 - Interactive demos for all features
 - State management examples with multiple controllers
 - Logging system with multiple output formats
@@ -69,10 +171,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extension method showcases
 
 ### Infrastructure
+
 - 100% test coverage with unit and widget tests
 - Very Good Analysis lint rules compliance
 - BSD-3-Clause License
 - GitHub repository and issue tracker
 - pub.dev integration
 
+[1.2.0]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v1.2.0
+[1.1.0]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v1.1.0
+[1.0.0]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v1.0.0
 [0.0.1]: https://github.com/koiralapankaj7/mz_utils/releases/tag/v0.0.1

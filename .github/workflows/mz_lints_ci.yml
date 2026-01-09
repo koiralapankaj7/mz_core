@@ -1,0 +1,107 @@
+name: mz_lints CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/mz_lints/**'
+      - '.github/workflows/mz_lints_ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/mz_lints/**'
+      - '.github/workflows/mz_lints_ci.yml'
+
+defaults:
+  run:
+    working-directory: packages/mz_lints
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      - name: Analyze code
+        run: dart analyze --fatal-infos
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Run tests
+        run: dart test
+
+      - name: Run tests with coverage
+        run: |
+          dart test --coverage=coverage
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage \
+            --lcov \
+            --in=coverage \
+            --out=coverage/lcov.info \
+            --report-on=lib \
+            --check-ignore
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: packages/mz_lints/coverage/lcov.info
+          flags: mz_lints
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  pana:
+    name: Package Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+
+      - name: Install dependencies
+        run: dart pub get
+
+      - name: Install pana
+        run: dart pub global activate pana
+
+      - name: Run pana
+        run: |
+          RESULT=$(dart pub global run pana --json .)
+          echo "$RESULT" | jq .
+          SCORE=$(echo "$RESULT" | jq '.scores.grantedPoints')
+          MAX=$(echo "$RESULT" | jq '.scores.maxPoints')
+          echo "Score: $SCORE/$MAX"
+          if [ "$SCORE" -lt "$MAX" ]; then
+            echo "::error::Pana score $SCORE is less than max $MAX"
+            exit 1
+          fi

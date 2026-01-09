@@ -31,7 +31,17 @@
       "Bash(tree:*)",
       "Bash(ssh:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:dart.dev)",
+      "Bash(dart pub global run coverage:format_coverage:*)",
+      "Bash(dart pub global activate:*)",
+      "Bash(python3:*)",
+      "Bash(dart pub global run pana:*)",
+      "Bash(act:*)",
+      "Bash(docker run:*)",
+      "Bash(dart --version:*)",
+      "Bash(dart pub get:*)",
+      "Bash(grep:*)"
     ]
   }
 }

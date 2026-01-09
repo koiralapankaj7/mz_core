@@ -182,10 +182,10 @@ class _WatcherRegistry {
   }
 }
 
-/// {@template mz_utils.ControllerWatchSimpleExtension}
+/// {@template mz_utils.ControllerMZX}
 /// Extension on [Controller] to enable watch() without wrapper widgets.
 ///
-/// [ControllerWatchSimpleExtension] provides a clean syntax for watching
+/// [ControllerMZX] provides a clean syntax for watching
 /// controllers directly in build methods without ControllerBuilder widgets.
 /// Cleanup is automatic using WeakReference.
 ///
@@ -284,7 +284,7 @@ class _WatcherRegistry {
 /// * [Controller], the base controller class
 /// * [ControllerBuilder], alternative widget-based approach
 /// {@endtemplate}
-extension ControllerWatchSimpleExtension<T extends Controller> on T {
+extension ControllerMZX<T extends Controller> on T {
   /// Watch this controller and rebuild when it notifies
   ///
   /// The widget will automatically rebuild whenever the controller notifies.

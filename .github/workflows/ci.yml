@@ -12,20 +12,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.4'
           channel: 'stable'
+          architecture: x64
           cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart format --output=none --set-exit-if-changed lib test example
 
       - name: Analyze code
         run: dart analyze --fatal-infos
@@ -35,13 +36,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.4'
           channel: 'stable'
+          architecture: x64
           cache: true
 
       - name: Install dependencies
@@ -66,13 +68,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.38.4'
           channel: 'stable'
+          architecture: x64
           cache: true
 
       - name: Install dependencies
@@ -82,7 +85,16 @@ jobs:
         run: dart pub global activate pana
 
       - name: Run pana
-        run: dart pub global run pana --no-warning
+        run: |
+          RESULT=$(dart pub global run pana --json .)
+          echo "$RESULT" | jq .
+          SCORE=$(echo "$RESULT" | jq '.scores.grantedPoints')
+          MAX=$(echo "$RESULT" | jq '.scores.maxPoints')
+          echo "Score: $SCORE/$MAX"
+          if [ "$SCORE" -lt "$MAX" ]; then
+            echo "::error::Pana score $SCORE is less than max $MAX"
+            exit 1
+          fi
 
   dependency-review:
     name: Dependency Review
@@ -92,7 +104,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Dependency Review
         uses: actions/dependency-review-action@v4
@@ -106,7 +118,7 @@ jobs:
       security-events: write  # Required for uploading SARIF results
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -117,7 +129,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'

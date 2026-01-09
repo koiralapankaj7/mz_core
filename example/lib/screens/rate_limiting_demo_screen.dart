@@ -18,21 +18,17 @@ class _RateLimitingDemoScreenState extends State<RateLimitingDemoScreen> {
   void dispose() {
     _debounceSearchController.dispose();
     _throttleController.dispose();
-    EasyDebounce.cancelAll();
+    Debouncer.cancelAll();
     super.dispose();
   }
 
   void _handleSearch(String value) {
-    EasyDebounce.debounce(
-      'search',
-      const Duration(milliseconds: 500),
-      () {
-        setState(() {
-          _debounceSearchCount++;
-          _lastSearchTerm = value;
-        });
-      },
-    );
+    Debouncer.debounce('search', const Duration(milliseconds: 500), () {
+      setState(() {
+        _debounceSearchCount++;
+        _lastSearchTerm = value;
+      });
+    });
   }
 
   @override
@@ -128,9 +124,9 @@ class _DebounceDemo extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Notice: API call only happens 500ms after you stop typing',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -140,19 +136,19 @@ class _DebounceDemo extends StatelessWidget {
 }
 
 class _ThrottleCounter with Controller {
+  static const _tag = 'throttle_demo';
+
   int _clickCount = 0;
   int _executionCount = 0;
 
   int get clickCount => _clickCount;
   int get executionCount => _executionCount;
 
-  final _throttler = Throttler(const Duration(seconds: 1));
-
   void handleClick() {
     _clickCount++;
     notifyListeners();
 
-    _throttler.call(() {
+    Throttler.throttle(_tag, const Duration(seconds: 1), () {
       _executionCount++;
       notifyListeners();
     });
@@ -160,7 +156,7 @@ class _ThrottleCounter with Controller {
 
   @override
   void dispose() {
-    _throttler.dispose();
+    Throttler.cancel(_tag);
     super.dispose();
   }
 }
@@ -223,9 +219,9 @@ class _ThrottleDemo extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Function executes at most once per second, even with rapid clicks',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -250,13 +246,7 @@ class _Counter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
         const SizedBox(height: 4),
         Text(
           '$count',
@@ -287,19 +277,17 @@ class _AdvanceDebouncerDemoState extends State<_AdvanceDebouncerDemo> {
   @override
   void initState() {
     super.initState();
-    _debouncedSearch = AdvanceDebouncer.debounce<String, String>(
-      'search',
-      (query) async {
-        await Future<void>.delayed(const Duration(seconds: 1));
-        return 'Results for: "$query"';
-      },
-      duration: const Duration(milliseconds: 800),
-    );
+    _debouncedSearch = Debouncer.debounceAsync<String, String>('search', (
+      query,
+    ) async {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      return 'Results for: "$query"';
+    }, duration: const Duration(milliseconds: 800));
   }
 
   @override
   void dispose() {
-    AdvanceDebouncer.cancel('search');
+    Debouncer.cancel('search');
     _textController.dispose();
     super.dispose();
   }
@@ -372,9 +360,9 @@ class _AdvanceDebouncerDemoState extends State<_AdvanceDebouncerDemo> {
             const SizedBox(height: 8),
             Text(
               'Cancels previous request if you type within 800ms',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -401,16 +389,16 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           description,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 12),
         child,

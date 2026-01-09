@@ -14,23 +14,31 @@ void main() {
       final set = ListenableSet<String>();
       expect(set, isA<ListenableSet<String>>());
 
-      final throttler = Throttler(const Duration(milliseconds: 100));
-      expect(throttler, isA<Throttler>());
-
       expect(LogLevel.values, isNotEmpty);
     });
 
     test('should access static methods', () {
       // Verify static classes are accessible
-      EasyDebounce.debounce(
+      Debouncer.debounce(
         'test',
         const Duration(milliseconds: 100),
         () {},
       );
-      expect(EasyDebounce.count(), greaterThan(0));
+      expect(Debouncer.count(), greaterThan(0));
 
-      EasyDebounce.cancelAll();
-      expect(EasyDebounce.count(), equals(0));
+      Debouncer.cancelAll();
+      expect(Debouncer.count(), equals(0));
+
+      // Verify Throttler static API
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () {},
+      );
+      expect(Throttler.count(), greaterThan(0));
+
+      Throttler.cancelAll();
+      expect(Throttler.count(), equals(0));
     });
   });
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mz_utils/src/controller.dart';
-import 'package:mz_utils/src/controller_watcher.dart';
+import 'package:mz_utils/src/watcher.dart';
 
 class TestController extends Controller {
   int count = 0;

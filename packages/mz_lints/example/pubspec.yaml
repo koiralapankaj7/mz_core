@@ -1,0 +1,11 @@
+name: example
+description: A minimal example for mz_lints plugin setup.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.0
+
+dev_dependencies:
+  mz_lints:
+    path: ../

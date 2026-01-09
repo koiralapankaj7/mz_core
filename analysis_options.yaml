@@ -1,1 +1,6 @@
 include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    # mz_lints has its own CI and analysis_options.yaml
+    - packages/**

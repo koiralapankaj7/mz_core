@@ -22,11 +22,7 @@ class _CollectionsDemoScreenState extends State<CollectionsDemoScreen> {
       'Walk the dog',
       'Finish project',
     ]);
-    _tagSet = ListenableSet<String>.from({
-      'urgent',
-      'personal',
-      'work',
-    });
+    _tagSet = ListenableSet<String>.from({'urgent', 'personal', 'work'});
   }
 
   @override
@@ -220,9 +216,7 @@ class _ListenableListDemo extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  Expanded(
-                                    child: Text(task),
-                                  ),
+                                  Expanded(child: Text(task)),
                                   IconButton(
                                     icon: const Icon(Icons.edit, size: 20),
                                     onPressed: () => onModifyTask(index),
@@ -251,9 +245,9 @@ class _ListenableListDemo extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Try adding, modifying, or removing tasks. The UI updates automatically!',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -414,9 +408,9 @@ class _ListenableSetDemo extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Click tags to add/remove them. Sets automatically prevent duplicates!',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -443,16 +437,16 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           description,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 12),
         child,

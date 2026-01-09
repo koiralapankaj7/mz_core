@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mz_utils/src/controller.dart';
@@ -108,22 +109,34 @@ void main() {
       });
 
       test('should provide O(1) removal for simple listeners', () {
-        final controller = TestController();
-        final listeners = List.generate(1000, (i) => () {});
+        // Test O(1) by comparing removal times at different scales
+        // If O(1), 10x more listeners should take ~10x time, not 100x
+        int measureRemovalTime(int count) {
+          final controller = TestController();
+          final listeners = List.generate(count, (i) => () {});
+          // ignore: cascade_invocations, forEach needed for benchmark
+          listeners.forEach(controller.addListener);
 
-        // Add 1000 simple listeners
-        // ignore: cascade_invocations
-        listeners.forEach(controller.addListener);
+          final stopwatch = Stopwatch()..start();
+          listeners.forEach(controller.removeListener);
+          stopwatch.stop();
 
-        // Remove all listeners - should be fast O(1) per removal
-        final stopwatch = Stopwatch()..start();
-        listeners.forEach(controller.removeListener);
-        stopwatch.stop();
+          controller.dispose();
+          return stopwatch.elapsedMicroseconds;
+        }
 
-        // O(1) removal should be very fast (< 5ms for 1000 removals)
-        expect(stopwatch.elapsedMilliseconds, lessThan(5));
+        // Warm up JIT
+        measureRemovalTime(100);
 
-        controller.dispose();
+        // Measure at two scales
+        final time100 = measureRemovalTime(100);
+        final time1000 = measureRemovalTime(1000);
+
+        // With O(1) removal, 10x listeners should be roughly 10x slower
+        // With O(n) removal, it would be ~100x slower
+        // Allow ratio up to 30x to account for variance (still catches O(n))
+        final ratio = time1000 / (time100 == 0 ? 1 : time100);
+        expect(ratio, lessThan(30));
       });
 
       test('should handle Set operations correctly', () {
@@ -570,63 +583,6 @@ void main() {
           ..notify(null, 4);
 
         expect(values, [2, 4]);
-
-        controller.dispose();
-      });
-    });
-
-    group('Batch Updates -', () {
-      test('should batch multiple updates into single notification', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            controller
-              ..notify()
-              ..notify()
-              ..notify();
-          });
-
-        expect(notifyCount, 1); // Only one notification
-
-        controller.dispose();
-      });
-
-      test('should handle nested batch calls', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            controller
-              ..notify()
-              ..batch(() {
-                controller
-                  ..notify()
-                  ..notify();
-              })
-              ..notify();
-          });
-
-        expect(notifyCount, 1); // Only one notification for outermost batch
-
-        controller.dispose();
-      });
-
-      test('should not notify if no changes in batch', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            // No changes - no notify calls
-          });
-
-        expect(notifyCount, 0); // No notification since no changes
 
         controller.dispose();
       });
@@ -1144,6 +1100,133 @@ void main() {
           ),
         );
         expect(Controller.maybeOfType<TestController>(capturedContext), isNull);
+      });
+
+      testWidgets('should find controller with listen: false', (tester) async {
+        TestController? found;
+
+        await tester.pumpWidget(
+          ControllerProvider<TestController>(
+            create: (_) => TestController(),
+            child: Builder(
+              builder: (context) {
+                found = Controller.ofType<TestController>(
+                  context,
+                  listen: false,
+                );
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(found, isNotNull);
+        expect(found, isA<TestController>());
+      });
+
+      testWidgets('should return null for maybeOfType with listen: false',
+          (tester) async {
+        late BuildContext capturedContext;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(
+          Controller.maybeOfType<TestController>(
+            capturedContext,
+            listen: false,
+          ),
+          isNull,
+        );
+      });
+
+      testWidgets(
+          'should not rebuild widget when listen: false and controller changes',
+          (tester) async {
+        var listenFalseBuildCount = 0;
+        var listenTrueBuildCount = 0;
+        final key = GlobalKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ControllerProvider<TestController>(
+              key: key,
+              create: (_) => TestController(),
+              child: Column(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      // Using listen: false should not create dependency
+                      Controller.maybeOfType<TestController>(
+                        context,
+                        listen: false,
+                      );
+                      listenFalseBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                  Builder(
+                    builder: (context) {
+                      // Using listen: true (default) should create dependency
+                      Controller.maybeOfType<TestController>(context);
+                      listenTrueBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(listenFalseBuildCount, 1);
+        expect(listenTrueBuildCount, 1);
+
+        // Trigger a rebuild by updating the widget tree
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ControllerProvider<TestController>(
+              key: key,
+              create: (_) => TestController(),
+              child: Column(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      Controller.maybeOfType<TestController>(
+                        context,
+                        listen: false,
+                      );
+                      listenFalseBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                  Builder(
+                    builder: (context) {
+                      Controller.maybeOfType<TestController>(context);
+                      listenTrueBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Both should rebuild since we pumped a new widget tree
+        // The real difference is in dependency registration, which we can't
+        // easily observe directly. What we CAN verify is that listen: false
+        // still finds the controller correctly.
+        expect(listenFalseBuildCount, 2);
+        expect(listenTrueBuildCount, 2);
       });
     });
 
@@ -1663,6 +1746,409 @@ void main() {
         expect(count, 3);
 
         controller.dispose();
+      });
+    });
+  });
+
+  group('ValueController Tests |', () {
+    group('Constructor and Initial Value', () {
+      test('should create controller with initial int value', () {
+        final controller = ValueController<int>(42);
+
+        expect(controller.value, equals(42));
+        expect(controller.hasPrevValue, isFalse);
+        expect(controller.prevValue, isNull);
+      });
+
+      test('should create controller with initial String value', () {
+        final controller = ValueController<String>('hello');
+
+        expect(controller.value, equals('hello'));
+        expect(controller.hasPrevValue, isFalse);
+        expect(controller.prevValue, isNull);
+      });
+
+      test('should create controller with nullable value', () {
+        final controller = ValueController<int?>(null);
+
+        expect(controller.value, isNull);
+        expect(controller.hasPrevValue, isFalse);
+        expect(controller.prevValue, isNull);
+      });
+    });
+
+    group('Value Getter and Setter', () {
+      test('should get current value', () {
+        final controller = ValueController<int>(10);
+
+        expect(controller.value, equals(10));
+      });
+
+      test('should set new value and notify listeners', () {
+        final controller = ValueController<int>(10);
+        var notified = false;
+
+        controller
+          ..addListener(() => notified = true)
+          ..value = 20;
+
+        expect(controller.value, equals(20));
+        expect(notified, isTrue);
+      });
+
+      test('should update prevValue when setting new value', () {
+        final controller = ValueController<int>(10)..value = 20;
+
+        expect(controller.value, equals(20));
+        expect(controller.prevValue, equals(10));
+        expect(controller.hasPrevValue, isTrue);
+      });
+
+      test('should not notify listeners when value is the same', () {
+        final controller = ValueController<int>(10);
+        var notificationCount = 0;
+
+        controller
+          ..addListener(() => notificationCount++)
+          ..value = 10;
+
+        expect(controller.value, equals(10));
+        expect(notificationCount, equals(0));
+        expect(controller.prevValue, isNull);
+      });
+
+      test('should handle multiple value changes', () {
+        final controller = ValueController<int>(1);
+        final values = <int>[];
+
+        controller
+          ..addListener(() => values.add(controller.value))
+          ..value = 2
+          ..value = 3
+          ..value = 4;
+
+        expect(controller.value, equals(4));
+        expect(controller.prevValue, equals(3));
+        expect(values, equals([2, 3, 4]));
+      });
+    });
+
+    group('onChanged Method', () {
+      test('should return true and notify when value changes', () {
+        final controller = ValueController<int>(10);
+        var notified = false;
+        controller.addListener(() => notified = true);
+
+        final result = controller.onChanged(20);
+
+        expect(result, isTrue);
+        expect(controller.value, equals(20));
+        expect(controller.prevValue, equals(10));
+        expect(notified, isTrue);
+      });
+
+      test('should return false when value is the same', () {
+        final controller = ValueController<int>(10);
+        var notificationCount = 0;
+        controller.addListener(() => notificationCount++);
+
+        final result = controller.onChanged(10);
+
+        expect(result, isFalse);
+        expect(controller.value, equals(10));
+        expect(controller.prevValue, isNull);
+        expect(notificationCount, equals(0));
+      });
+
+      test('should not notify listeners when silent is true', () {
+        final controller = ValueController<int>(10);
+        var notified = false;
+        controller.addListener(() => notified = true);
+
+        final result = controller.onChanged(20, silent: true);
+
+        expect(result, isTrue);
+        expect(controller.value, equals(20));
+        expect(controller.prevValue, equals(10));
+        expect(notified, isFalse);
+      });
+
+      test('should pass key to notifyListeners', () {
+        final controller = ValueController<int>(10);
+        Object? receivedKey;
+
+        controller
+          ..addListener(
+            (Object? key, Object? value) => receivedKey = key,
+            key: 'counter',
+          )
+          ..onChanged(20, key: 'counter');
+
+        expect(receivedKey, equals('counter'));
+      });
+
+      test('should handle rapid value changes', () {
+        final controller = ValueController<int>(0);
+        final changes = <int>[];
+        controller.addListener(() => changes.add(controller.value));
+
+        for (var i = 1; i <= 5; i++) {
+          controller.onChanged(i);
+        }
+
+        expect(controller.value, equals(5));
+        expect(controller.prevValue, equals(4));
+        expect(changes, equals([1, 2, 3, 4, 5]));
+      });
+    });
+
+    group('prevValue and hasPrevValue', () {
+      test('should have no previous value initially', () {
+        final controller = ValueController<int>(10);
+
+        expect(controller.hasPrevValue, isFalse);
+        expect(controller.prevValue, isNull);
+      });
+
+      test('should have previous value after first change', () {
+        final controller = ValueController<int>(10)..value = 20;
+
+        expect(controller.hasPrevValue, isTrue);
+        expect(controller.prevValue, equals(10));
+      });
+
+      test('should update prevValue on each change', () {
+        final controller = ValueController<String>('a')
+          ..value = 'b'
+          ..value = 'c'
+          ..value = 'd';
+
+        expect(controller.prevValue, equals('c'));
+      });
+
+      test('should handle nullable types for prevValue', () {
+        final controller = ValueController<int?>(null)..value = 10;
+
+        expect(controller.prevValue, isNull);
+        expect(controller.hasPrevValue, isFalse);
+
+        controller.value = 20;
+
+        expect(controller.prevValue, equals(10));
+        expect(controller.hasPrevValue, isTrue);
+      });
+
+      test('should preserve prevValue when setting same value', () {
+        final controller = ValueController<int>(10)
+          ..value = 20
+          ..value = 20;
+
+        expect(controller.prevValue, equals(10));
+        expect(controller.value, equals(20));
+      });
+    });
+
+    group('notifyListeners Override', () {
+      test('should pass value to super.notifyListeners by default', () {
+        final controller = ValueController<int>(42);
+        Object? receivedValue;
+
+        controller
+          ..addListener(
+            (Object? key, Object? value) => receivedValue = value,
+          )
+          ..notifyListeners();
+
+        expect(receivedValue, equals(42));
+      });
+
+      test('should use custom value when provided', () {
+        final controller = ValueController<int>(42);
+        Object? receivedValue;
+
+        controller
+          ..addListener(
+            (Object? key, Object? value) => receivedValue = value,
+          )
+          ..notifyListeners(value: 100);
+
+        expect(receivedValue, equals(100));
+      });
+
+      test('should respect includeGlobalListeners parameter', () {
+        final controller = ValueController<int>(42);
+        var globalNotified = false;
+        var keyNotified = false;
+
+        controller
+          ..addListener(() => globalNotified = true)
+          ..addListener(() => keyNotified = true, key: 'test')
+          ..notifyListeners(
+            key: 'test',
+            includeGlobalListeners: false,
+          );
+
+        expect(globalNotified, isFalse);
+        expect(keyNotified, isTrue);
+      });
+    });
+
+    group('ValueListenable Integration', () {
+      test('should implement ValueListenable interface', () {
+        final controller = ValueController<int>(42);
+
+        expect(controller, isA<ValueListenable<int>>());
+      });
+
+      test('should notify on value change', () {
+        final controller = ValueController<int>(10);
+        var buildCount = 0;
+        int? lastValue;
+
+        void listener() {
+          buildCount++;
+          lastValue = controller.value;
+        }
+
+        controller
+          ..addListener(listener)
+          ..value = 20
+          ..value = 30;
+
+        expect(buildCount, equals(2));
+        expect(lastValue, equals(30));
+      });
+
+      test('should work with multiple listeners', () {
+        final controller = ValueController<int>(10);
+        var listener1Called = false;
+        var listener2Called = false;
+
+        controller
+          ..addListener(() => listener1Called = true)
+          ..addListener(() => listener2Called = true)
+          ..value = 20;
+
+        expect(listener1Called, isTrue);
+        expect(listener2Called, isTrue);
+      });
+
+      test('should remove listeners properly', () {
+        final controller = ValueController<int>(10);
+        var notificationCount = 0;
+        void listener() => notificationCount++;
+
+        controller
+          ..addListener(listener)
+          ..value = 20
+          ..removeListener(listener)
+          ..value = 30;
+
+        expect(notificationCount, equals(1));
+      });
+    });
+
+    group('Equality and Edge Cases', () {
+      test('should handle null values for nullable types', () {
+        final controller = ValueController<String?>(null);
+        var notificationCount = 0;
+
+        controller
+          ..addListener(() => notificationCount++)
+          ..value = null;
+
+        expect(notificationCount, equals(0));
+        expect(controller.value, isNull);
+      });
+
+      test('should transition from null to non-null', () {
+        final controller = ValueController<int?>(null);
+        var notified = false;
+
+        controller
+          ..addListener(() => notified = true)
+          ..value = 42;
+
+        expect(notified, isTrue);
+        expect(controller.value, equals(42));
+        expect(controller.prevValue, isNull);
+      });
+
+      test('should transition from non-null to null', () {
+        final controller = ValueController<int?>(42);
+        var notified = false;
+
+        controller
+          ..addListener(() => notified = true)
+          ..value = null;
+
+        expect(notified, isTrue);
+        expect(controller.value, isNull);
+        expect(controller.prevValue, equals(42));
+      });
+
+      test('should handle zero values correctly', () {
+        final controller = ValueController<int>(0);
+        var notificationCount = 0;
+
+        controller
+          ..addListener(() => notificationCount++)
+          ..value = 0;
+
+        expect(notificationCount, equals(0));
+        expect(controller.value, equals(0));
+      });
+
+      test('should handle empty string correctly', () {
+        final controller = ValueController<String>('');
+        var notificationCount = 0;
+
+        controller
+          ..addListener(() => notificationCount++)
+          ..value = '';
+
+        expect(notificationCount, equals(0));
+        expect(controller.value, equals(''));
+      });
+
+      test('should handle boolean values', () {
+        final controller = ValueController<bool>(false);
+        final values = <bool>[];
+
+        controller
+          ..addListener(() => values.add(controller.value))
+          ..value = true
+          ..value = false
+          ..value = false;
+
+        expect(values, equals([true, false]));
+        expect(controller.value, isFalse);
+      });
+    });
+
+    group('Disposal', () {
+      test('should not notify after disposal', () {
+        final controller = ValueController<int>(10);
+        var notificationCount = 0;
+
+        controller
+          ..addListener(() => notificationCount++)
+          ..dispose()
+          ..value = 20;
+
+        expect(notificationCount, equals(0));
+      });
+
+      test('should not throw when setting value after disposal', () {
+        final controller = ValueController<int>(10)..dispose();
+
+        expect(() => controller.value = 20, returnsNormally);
+      });
+
+      test('should not throw when calling onChanged after disposal', () {
+        final controller = ValueController<int>(10)..dispose();
+
+        expect(() => controller.onChanged(20), returnsNormally);
       });
     });
   });

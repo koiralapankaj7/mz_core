@@ -44,7 +44,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body: ${{ steps.changelog.outputs.CHANGELOG }}
           draft: false
@@ -54,27 +54,7 @@ jobs:
 
   publish:
     name: Publish to pub.dev
-    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for OIDC authentication
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     needs: release
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.4'
-          channel: 'stable'
-          cache: true
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Publish package (dry run)
-        run: flutter pub publish --dry-run
-
-      # Uncomment when ready to auto-publish
-      # - name: Publish package
-      #   run: flutter pub publish --force
-      #   env:
-      #     PUB_CREDENTIALS: ${{ secrets.PUB_CREDENTIALS }}

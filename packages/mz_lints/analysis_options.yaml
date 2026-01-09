@@ -1,0 +1,23 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - example/**
+  errors:
+    # test_reflective_loader requires test_ prefix naming
+    non_constant_identifier_names: ignore
+
+linter:
+  rules:
+    # Analysis plugins require specific constructor patterns
+    sort_constructors_first: false
+    # Raw strings are clearer for multi-line code in tests
+    unnecessary_raw_strings: false
+    # Cascade invocations reduce readability in complex builders
+    cascade_invocations: false
+    # Public API docs not needed for internal fix classes
+    public_member_api_docs: false
+    # Local type annotations improve readability in complex code
+    omit_local_variable_types: false
+    # 80 char limit too restrictive for complex expressions
+    lines_longer_than_80_chars: false

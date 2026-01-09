@@ -10,6 +10,7 @@ This guide explains the key architectural patterns and concepts used in mz_utils
 - [Listenable Collections](#listenable-collections)
 - [Structured Logging](#structured-logging)
 - [Rate Limiting (Debounce/Throttle)](#rate-limiting-debouncethrottle)
+- [Memoization](#memoization)
 
 ## Controllers and State Management
 
@@ -76,6 +77,49 @@ controller.dispose();                    // 3. Dispose
 ```
 
 **Important**: Always dispose controllers when done to prevent memory leaks.
+
+### Accessing Controllers in Widget Tree
+
+Use `Controller.ofType<T>()` to access controllers from the widget tree:
+
+```dart
+// Get controller - throws if not found
+final controller = Controller.ofType<TodoController>(context);
+
+// Get controller - returns null if not found
+final controller = Controller.maybeOfType<TodoController>(context);
+```
+
+#### The `listen` Parameter
+
+Both methods accept an optional `listen` parameter (default: `true`):
+
+| Parameter | Behavior |
+| --------- | -------- |
+| `listen: true` (default) | Widget rebuilds when controller is replaced in tree |
+| `listen: false` | Widget does not rebuild; use in callbacks |
+
+**Important:** Always use `listen: false` when accessing the controller from
+callbacks such as `onPressed`, `onTap`, `onChanged`, or other event handlers.
+This avoids unnecessary widget rebuilds and follows the same pattern as
+`Provider.of`.
+
+```dart
+// In build method - use listen: true (default)
+final controller = Controller.ofType<TodoController>(context);
+
+// In callbacks - use listen: false
+ElevatedButton(
+  onPressed: () {
+    final ctrl = Controller.ofType<TodoController>(
+      context,
+      listen: false,
+    );
+    ctrl.addTodo('New Item');
+  },
+  child: const Text('Add'),
+)
+```
 
 ## Listeners and Notifications
 
@@ -490,7 +534,7 @@ final output = RotatingFileOutput(
 **Mental Model**: "Wait for things to calm down, then act"
 
 ```dart
-EasyDebounce.debounce(
+Debouncer.debounce(
   'search',
   const Duration(milliseconds: 500),
   () => performSearch(query),
@@ -550,7 +594,7 @@ Execute:   ✓|_|_|✓|_|_|✓|_|_|
 For async operations with results:
 
 ```dart
-final debouncer = AdvanceDebouncer.debounce<SearchResults, String>(
+final debouncer = Debouncer.debounceAsync<SearchResults, String>(
   'api-search',
   (query) async {
     final response = await http.get(
@@ -573,6 +617,114 @@ if (results != null) {
 - Type-safe async operations
 - Cancellation of in-flight requests
 - Null return when cancelled
+
+## Memoization
+
+### Concept
+
+**Memoization** caches the results of expensive computations so subsequent calls
+with the same inputs return instantly from cache.
+
+`Memoizer` provides a tag-based caching API consistent with `Debouncer`:
+
+```dart
+// Cache API calls with tags
+Future<User> getCurrentUser() => Memoizer.run(
+  'current-user',
+  () => api.fetchCurrentUser(),
+);
+```
+
+### Key Features
+
+| Feature | Description |
+| ------- | ----------- |
+| **Tag-based** | Cache entries identified by string tags |
+| **TTL support** | Automatic cache expiration |
+| **Request deduplication** | Concurrent calls share the same computation |
+| **Force refresh** | Bypass cache when needed |
+| **Dynamic tags** | Key-based caching with `'product-$id'` |
+
+### Basic Usage
+
+```dart
+// Simple caching
+final user = await Memoizer.run(
+  'current-user',
+  () => api.fetchCurrentUser(),
+);
+
+// With TTL (time-to-live)
+final products = await Memoizer.run(
+  'product-list',
+  () => api.fetchProducts(),
+  ttl: const Duration(minutes: 10),
+);
+
+// Dynamic tags for key-based caching
+Future<Product> getProduct(String id) => Memoizer.run(
+  'product-$id',
+  () => api.fetchProduct(id),
+);
+```
+
+### Cache Management
+
+```dart
+// Check cache state
+if (Memoizer.hasValue('current-user')) {
+  final cached = Memoizer.getValue<User>('current-user');
+}
+
+// Check if computation is in progress
+if (Memoizer.isPending('current-user')) {
+  // Request already in flight
+}
+
+// Force refresh (bypass cache)
+final fresh = await Memoizer.run(
+  'current-user',
+  () => api.fetchCurrentUser(),
+  forceRefresh: true,
+);
+
+// Invalidate specific cache
+Memoizer.clear('current-user');
+
+// Invalidate all caches
+Memoizer.clearAll();
+```
+
+### Request Deduplication
+
+When multiple calls happen concurrently, only one computation runs:
+
+```dart
+// These three calls share a single API request
+final results = await Future.wait([
+  Memoizer.run('user', () => api.fetchUser()),
+  Memoizer.run('user', () => api.fetchUser()),
+  Memoizer.run('user', () => api.fetchUser()),
+]);
+// results[0] == results[1] == results[2]
+```
+
+### When to Use
+
+| Use Case | Example |
+| -------- | ------- |
+| **API responses** | Cache user profile, product details |
+| **Expensive computations** | Image processing, data transformation |
+| **Configuration** | App settings, feature flags |
+| **Pull-to-refresh** | Use `forceRefresh: true` |
+
+### Memoizer vs Other Patterns
+
+| Pattern | Best For |
+| ------- | -------- |
+| **Memoizer** | Async operations, API calls, expensive computations |
+| **Debouncer** | User input, search-as-you-type |
+| **Throttler** | Rate limiting, scroll events |
 
 ## Design Principles
 
