@@ -8,7 +8,7 @@ Add mz_utils to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_utils: ^1.1.0
+  mz_utils: ^1.2.0
 ```
 
 Run:
@@ -239,27 +239,18 @@ class _SearchWidgetState extends State<SearchWidget> {
 Limit how often a function can execute (e.g., save button):
 
 ```dart
-class SaveButton extends StatefulWidget {
+class SaveButton extends StatelessWidget {
   const SaveButton({super.key});
 
-  @override
-  State<SaveButton> createState() => _SaveButtonState();
-}
-
-class _SaveButtonState extends State<SaveButton> {
-  final _throttler = Throttler(const Duration(seconds: 2));
-
   void _handleSave() {
-    _throttler.call(() {
-      print('Saving data...');
-      // Save operation - can only run once every 2 seconds
-    });
-  }
-
-  @override
-  void dispose() {
-    _throttler.dispose();
-    super.dispose();
+    Throttler.throttle(
+      'save_button',
+      const Duration(seconds: 2),
+      () {
+        print('Saving data...');
+        // Save operation - can only run once every 2 seconds
+      },
+    );
   }
 
   @override
@@ -456,10 +447,78 @@ class TodoScreen extends StatelessWidget {
 }
 ```
 
+Both `ofType` and `maybeOfType` accept an optional `listen` parameter (default: `true`):
+
+| Parameter | Behavior |
+| ----------- | ---------- |
+| `listen: true` (default) | Widget rebuilds when controller is replaced in tree |
+| `listen: false` | Widget does not rebuild; use in callbacks |
+
+**Important:** Always use `listen: false` when accessing the controller from
+callbacks such as `onPressed`, `onTap`, `onChanged`, or other event handlers.
+This avoids unnecessary widget rebuilds and follows the same pattern as
+`Provider.of`.
+
+```dart
+class TodoScreen extends StatelessWidget {
+  const TodoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // In build method - use listen: true (default)
+    // Widget will rebuild if controller is replaced
+    final controller = Controller.ofType<TodoController>(context);
+
+    return Column(
+      children: [
+        // Display todos - needs to listen for updates
+        Expanded(
+          child: ControllerBuilder<TodoController>(
+            controller: controller,
+            builder: (context, ctrl) {
+              return ListView.builder(
+                itemCount: ctrl.todos.length,
+                itemBuilder: (context, index) {
+                  return ListTile(title: Text(ctrl.todos[index].title));
+                },
+              );
+            },
+          ),
+        ),
+
+        // Button with callback - use listen: false
+        ElevatedButton(
+          onPressed: () {
+            final ctrl = Controller.ofType<TodoController>(
+              context,
+              listen: false, // No rebuild needed in callback
+            );
+            ctrl.addTodo('New Item');
+          },
+          child: const Text('Add Todo'),
+        ),
+
+        // Text field with onChanged - use listen: false
+        TextField(
+          onChanged: (value) {
+            final ctrl = Controller.ofType<TodoController>(
+              context,
+              listen: false, // No rebuild needed in callback
+            );
+            ctrl.updateSearchQuery(value);
+          },
+          decoration: const InputDecoration(hintText: 'Search...'),
+        ),
+      ],
+    );
+  }
+}
+```
+
 ### Async Debouncing Pattern
 
 ```dart
-final searchDebouncer = AdvanceDebouncer.debounce<List<Result>, String>(
+final searchDebouncer = Debouncer.debounceAsync<List<Result>, String>(
   'search',
   (query) async {
     final response = await http.get(
@@ -477,6 +536,49 @@ void _onSearchChanged(String query) async {
     setState(() {
       _searchResults = results;
     });
+  }
+}
+```
+
+### Memoization Pattern
+
+```dart
+// Cache API calls with tags (similar to Debouncer)
+Future<User> getCurrentUser() {
+  return Memoizer.run(
+    'current-user',
+    () => api.fetchCurrentUser(),
+    ttl: const Duration(minutes: 30),
+  );
+}
+
+// Key-based caching with dynamic tags
+Future<Product> getProduct(String id) {
+  return Memoizer.run(
+    'product-$id',
+    () => api.fetchProduct(id),
+    ttl: const Duration(minutes: 10),
+  );
+}
+
+// Force refresh for pull-to-refresh
+Future<User> refreshUser() {
+  return Memoizer.run(
+    'current-user',
+    () => api.fetchCurrentUser(),
+    forceRefresh: true,
+  );
+}
+
+// Invalidate specific cache
+void logout() {
+  Memoizer.clear('current-user');
+}
+
+// Invalidate all product caches
+void clearProductCache() {
+  for (final tag in Memoizer.tags.where((t) => t.startsWith('product-'))) {
+    Memoizer.clear(tag);
   }
 }
 ```
@@ -527,6 +629,7 @@ class ApiService {
 - **Controllers**: Always call `dispose()` when done with controllers
 - **Debouncing**: Use unique tags for different debounce operations
 - **Throttling**: Choose appropriate durations based on use case
+- **Memoization**: Use TTL for data that may become stale; use `forceRefresh` for pull-to-refresh
 - **Logging**: Use appropriate log levels (trace/debug for development, info/warning/error for production)
 - **Listenable Collections**: Remember to remove listeners in `dispose()`
 - **Auto-disposal**: Register cleanup functions immediately after creating resources
@@ -536,6 +639,10 @@ class ApiService {
 **Q: When should I use debounce vs throttle?**
 
 A: Use **debounce** when you want to wait for user input to stop (e.g., search as you type). Use **throttle** when you want to limit how often something runs while it's happening (e.g., scroll events, button presses).
+
+**Q: How do I cache multiple items with Memoizer?**
+
+A: Use dynamic tags like `'product-$id'`. This is similar to how Debouncer uses tags. Call `Memoizer.clear('product-$id')` to invalidate specific entries.
 
 **Q: How do I choose between Controller and ChangeNotifier?**
 

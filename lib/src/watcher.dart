@@ -182,56 +182,20 @@ class _WatcherRegistry {
   }
 }
 
-/// Internal controller for derived values with auto-dispose support.
-///
-/// When `autoDispose` is true, this controller automatically disposes itself
-/// when all listeners are removed, cleaning up the listener on the source
-/// controller.
-class _DerivedController<R> extends ValueController<R> {
-  _DerivedController(
-    super.value, {
-    required VoidCallback onDispose,
-    required bool autoDispose,
-  })  : _onDispose = onDispose,
-        _autoDispose = autoDispose;
-
-  final VoidCallback _onDispose;
-  final bool _autoDispose;
-
-  @override
-  void removeListener(Function listener, {Object? key}) {
-    super.removeListener(listener, key: key);
-    if (_autoDispose && !hasListeners) {
-      // Defer disposal to avoid issues during notification iteration
-      // Re-check hasListeners in case a new listener was added before microtask
-      scheduleMicrotask(() {
-        if (!isDisposed && !hasListeners) dispose();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    if (!isDisposed) _onDispose();
-    super.dispose();
-  }
-}
-
 /// {@template mz_utils.ControllerMZX}
-/// Extension on [Controller] providing watch, select, and derive capabilities.
+/// Extension on [Controller] to enable watch() without wrapper widgets.
 ///
-/// [ControllerMZX] provides a clean syntax for watching controllers directly
-/// in build methods without ControllerBuilder widgets, and for creating
-/// derived controllers. Cleanup is automatic using WeakReference.
+/// [ControllerMZX] provides a clean syntax for watching
+/// controllers directly in build methods without ControllerBuilder widgets.
+/// Cleanup is automatic using WeakReference.
 ///
 /// ## When to Use
 ///
-/// Use this extension when you want:
+/// Use watch() when you want:
 /// * Simpler syntax than ControllerBuilder
 /// * Automatic cleanup without manual listener management
 /// * Key-based selective rebuilds
 /// * Predicate-filtered notifications
-/// * Derived listenables for state composition
 ///
 /// ## Key Features
 ///
@@ -241,7 +205,6 @@ class _DerivedController<R> extends ValueController<R> {
 /// * **Predicate Support**: Conditional rebuilds
 /// * **Priority Control**: Execution order control
 /// * **Select Support**: Rebuild only when specific values change
-/// * **Derive Support**: Create derived controllers from source state
 ///
 /// ## Basic Usage
 ///
@@ -309,100 +272,49 @@ class _DerivedController<R> extends ValueController<R> {
 /// ```
 /// {@end-tool}
 ///
-/// ## Derived Controllers
-///
-/// {@tool snippet}
-/// Create derived controllers for state composition:
-///
-/// ```dart
-/// final userController = UserController();
-/// final nameController = userController.derive((c) => c.user.name);
-///
-/// // Listen to name changes only
-/// nameController.addListener(() {
-///   print('Name: ${nameController.value}');
-/// });
-/// ```
-/// {@end-tool}
-///
 /// ## Performance Tips
 ///
-/// 1. **Use select()** when you only care about specific values in build
-/// 2. **Use derive()** when you need a listenable outside build methods
-/// 3. **Use key filtering** to reduce unnecessary rebuilds
-/// 4. **Use predicates** for conditional logic
-/// 5. **Don't mix watch() with ControllerBuilder** in the same widget
+/// 1. **Use select()** when you only care about specific values
+/// 2. **Use key filtering** to reduce unnecessary rebuilds
+/// 3. **Use predicates** for conditional logic
+/// 4. **Don't mix watch() with ControllerBuilder** in the same widget
 ///
 /// See also:
 ///
 /// * [Controller], the base controller class
 /// * [ControllerBuilder], alternative widget-based approach
-/// * [ValueController], the type returned by derive()
 /// {@endtemplate}
 extension ControllerMZX<T extends Controller> on T {
-  /// Watch this controller and rebuild the widget when it notifies.
+  /// Watch this controller and rebuild when it notifies
   ///
   /// The widget will automatically rebuild whenever the controller notifies.
-  /// Cleanup is automatic using [WeakReference] and mounted checks.
+  /// Cleanup is automatic using WeakReference and mounted checks.
   ///
-  /// The [key] parameter filters notifications to only rebuild when that
-  /// specific key is notified. The [predicate] parameter provides custom
-  /// filtering logic. The [priority] parameter controls the order of listener
-  /// execution (higher priority executes first).
-  ///
-  /// {@tool snippet}
-  /// Basic usage - rebuild on any notification:
-  ///
+  /// Basic usage:
   /// ```dart
   /// Widget build(BuildContext context) {
   ///   final count = counterController.watch(context).count;
   ///   return Text('Count: $count');
   /// }
   /// ```
-  /// {@end-tool}
   ///
-  /// {@tool snippet}
-  /// With key filtering - only rebuild for specific keys:
-  ///
+  /// With key filtering (only rebuild for specific keys):
   /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   // Only rebuilds when 'count' key is notified
-  ///   final value = controller.watch(context, key: 'count').value;
-  ///   return Text('Value: $value');
-  /// }
+  /// final value = controller.watch(context, key: 'count').value;
   /// ```
-  /// {@end-tool}
   ///
-  /// {@tool snippet}
-  /// With predicate - only rebuild when condition is true:
-  ///
+  /// With predicate (only rebuild when condition is true):
   /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final value = controller.watch(
-  ///     context,
-  ///     predicate: (key, value) => value is int && value > 10,
-  ///   ).value;
-  ///   return Text('High value: $value');
-  /// }
+  /// final value = controller.watch(
+  ///   context,
+  ///   predicate: (key, value) => value is int && value > 10,
+  /// ).value;
   /// ```
-  /// {@end-tool}
   ///
-  /// {@tool snippet}
-  /// With priority - control rebuild order:
-  ///
+  /// With priority (control rebuild order):
   /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   // Higher priority listeners are notified first
-  ///   final value = controller.watch(context, priority: 10).value;
-  ///   return Text('Value: $value');
-  /// }
+  /// final value = controller.watch(context, priority: 10).value;
   /// ```
-  /// {@end-tool}
-  ///
-  /// See also:
-  ///
-  /// * [select], for rebuilding only when a specific value changes
-  /// * [derive], for creating a derived [ValueController]
   T watch(
     BuildContext context, {
     Object? key,
@@ -418,69 +330,15 @@ extension ControllerMZX<T extends Controller> on T {
     );
   }
 
-  /// Watch and select a specific value, rebuilding only when it changes.
+  /// Watch and select a specific value
   ///
-  /// Unlike [watch], which rebuilds on every notification, `select` only
-  /// triggers a rebuild when the selected value actually changes. This is
-  /// useful for optimizing performance when you only care about a specific
-  /// piece of state.
+  /// Only rebuilds when the selected value changes (uses persistent storage).
   ///
-  /// The [selector] function extracts the value you care about from the
-  /// controller. The widget only rebuilds when this value changes.
-  ///
-  /// The optional [key] parameter filters which notifications are considered.
-  /// If provided, only notifications with that key will trigger the selector
-  /// comparison.
-  ///
-  /// {@tool snippet}
-  /// Basic usage - only rebuild when count changes:
-  ///
+  /// Example:
   /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = controller.select(context, (c) => c.count);
-  ///   return Text('Count: $count');
-  /// }
+  /// final count = controller.select(context, (c) => c.count);
+  /// return Text('Count: $count');
   /// ```
-  /// {@end-tool}
-  ///
-  /// {@tool snippet}
-  /// With complex selector - derived value:
-  ///
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   // Only rebuilds when the computed value changes
-  ///   final isEven = controller.select(
-  ///     context,
-  ///     (c) => c.count % 2 == 0,
-  ///   );
-  ///   return Text(isEven ? 'Even' : 'Odd');
-  /// }
-  /// ```
-  /// {@end-tool}
-  ///
-  /// {@tool snippet}
-  /// With key filtering:
-  ///
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   // Only considers 'user' key notifications
-  ///   final userName = controller.select(
-  ///     context,
-  ///     (c) => c.user.name,
-  ///     key: 'user',
-  ///   );
-  ///   return Text('User: $userName');
-  /// }
-  /// ```
-  /// {@end-tool}
-  ///
-  /// **Note:** Use [derive] instead if you need a `ValueListenable` outside
-  /// of build methods.
-  ///
-  /// See also:
-  ///
-  /// * [watch], for rebuilding on every notification
-  /// * [derive], for creating a derived [ValueController]
   R select<R>(
     BuildContext context,
     R Function(T controller) selector, {
@@ -514,124 +372,6 @@ extension ControllerMZX<T extends Controller> on T {
     }
 
     return current;
-  }
-
-  /// Creates a derived [ValueController] that updates when selected value
-  /// changes.
-  ///
-  /// The derived controller automatically updates its value whenever the
-  /// result of [selector] applied to this controller changes.
-  ///
-  /// The [selector] function is called:
-  /// - Once immediately to get the initial value
-  /// - Every time this controller notifies listeners
-  ///
-  /// The [distinct] parameter controls when the derived controller notifies:
-  /// - `true` (default): Only when the selected value actually changes
-  /// - `false`: On every source notification, even if value is the same
-  ///
-  /// The [autoDispose] parameter controls automatic cleanup:
-  /// - `true` (default): Automatically disposes when all listeners are removed
-  /// - `false`: User must manually dispose the derived controller
-  ///
-  /// {@tool snippet}
-  /// Use in build methods with autoDispose (default):
-  ///
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final count = controller.derive((c) => c.count);
-  ///   return ValueListenableBuilder<int>(
-  ///     valueListenable: count,
-  ///     builder: (context, value, _) => Text('$value'),
-  ///   );
-  /// }
-  /// // Auto-disposes when widget unmounts
-  /// ```
-  /// {@end-tool}
-  ///
-  /// {@tool snippet}
-  /// Manual lifecycle management with autoDispose: false:
-  ///
-  /// ```dart
-  /// class _MyState extends State<MyWidget> {
-  ///   late final ValueController<String> emailController;
-  ///
-  ///   @override
-  ///   void initState() {
-  ///     super.initState();
-  ///     emailController = userController.derive(
-  ///       (c) => c.user.email,
-  ///       autoDispose: false,
-  ///     );
-  ///   }
-  ///
-  ///   @override
-  ///   void dispose() {
-  ///     emailController.dispose();
-  ///     super.dispose();
-  ///   }
-  /// }
-  /// ```
-  /// {@end-tool}
-  ///
-  /// **vs select():**
-  ///
-  /// Use derive() when you need a ValueListenable:
-  /// ```dart
-  /// final derived = controller.derive((c) => c.value);
-  /// return ValueListenableBuilder(valueListenable: derived, ...);
-  /// ```
-  ///
-  /// Use select() for direct value access in build:
-  /// ```dart
-  /// Widget build(BuildContext context) {
-  ///   final value = controller.select(context, (c) => c.value);
-  ///   return Text('$value');
-  /// }
-  /// ```
-  ///
-  /// See also:
-  ///
-  /// * [select], for optimized rebuilds in build methods
-  /// * [ValueController], the returned type
-  ValueController<R> derive<R>(
-    R Function(T controller) selector, {
-    bool distinct = true,
-    bool autoDispose = true,
-  }) {
-    // Create listener that updates derived value
-    late final VoidCallback listener;
-    late final _DerivedController<R> derived;
-
-    listener = () {
-      if (derived.isDisposed) return;
-      final newValue = selector(this);
-      if (distinct) {
-        // Only update if value changed (uses ValueController's comparison)
-        derived.onChanged(newValue);
-      } else {
-        // Force update even if same value
-        final oldValue = derived.value;
-        if (oldValue != newValue) {
-          derived.value = newValue;
-        } else {
-          // Value is same but we want to notify anyway
-          derived.notifyListeners();
-        }
-      }
-    };
-
-    // Create derived controller with cleanup callback
-    derived = _DerivedController<R>(
-      selector(this),
-      onDispose: () => removeListener(listener),
-      autoDispose: autoDispose,
-    );
-
-    // Add listener to source controller
-    addListener(listener);
-
-    return derived;
   }
 }
 

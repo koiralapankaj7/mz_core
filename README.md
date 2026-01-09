@@ -16,6 +16,7 @@ A collection of production-ready Flutter and Dart utilities for state management
 | **🔍 Observable Collections** | `ListenableList` and `ListenableSet` with change notifications |
 | **📝 Structured Logging** | Flexible logging system with groups, levels, and multiple outputs |
 | **⏱️ Rate Limiting** | Debounce and throttle utilities for user input and events |
+| **💾 Memoization** | Cache expensive async operations with TTL and key-based caching |
 | **🔧 Extensions** | Useful extensions for `Iterable`, `List`, `Set`, `String`, `num`, and `Widget` |
 
 ## Installation
@@ -24,7 +25,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_utils: ^1.1.0
+  mz_utils: ^1.2.0
 ```
 
 Then run:
@@ -165,31 +166,49 @@ class SearchWidget extends StatefulWidget {
 ### Throttle Button Presses
 
 ```dart
-class SaveButton extends StatefulWidget {
-  @override
-  State<SaveButton> createState() => _SaveButtonState();
-}
-
-class _SaveButtonState extends State<SaveButton> {
-  final _throttler = Throttler(const Duration(seconds: 2));
-
-  @override
-  void dispose() {
-    _throttler.dispose();
-    super.dispose();
-  }
-
+class SaveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
         // Can only execute once every 2 seconds
-        _throttler.call(() => saveData());
+        Throttler.throttle(
+          'save_button',
+          const Duration(seconds: 2),
+          () => saveData(),
+        );
       },
       child: const Text('Save'),
     );
   }
 }
+```
+
+### Memoization
+
+```dart
+// Cache API calls with tags (like Debouncer)
+Future<User> getCurrentUser() => Memoizer.run(
+  'current-user',
+  () => api.fetchCurrentUser(),
+  ttl: const Duration(minutes: 30),
+);
+
+// Key-based caching with dynamic tags
+Future<Product> getProduct(String id) => Memoizer.run(
+  'product-$id',
+  () => api.fetchProduct(id),
+);
+
+// Force refresh for pull-to-refresh
+Future<User> refreshUser() => Memoizer.run(
+  'current-user',
+  () => api.fetchCurrentUser(),
+  forceRefresh: true,
+);
+
+// Invalidate cache
+void logout() => Memoizer.clear('current-user');
 ```
 
 ## Example App
@@ -274,7 +293,7 @@ Control function execution frequency:
 
 - **Debouncer**: Execute after calls stop (search-as-you-type)
 - **Throttler**: Limit execution frequency (scroll events)
-- **AdvanceDebouncer**: Type-safe async debouncing with cancellation
+- **Debouncer.debounceAsync**: Type-safe async debouncing with cancellation
 
 **Use case**: API rate limiting, UI event handling, auto-save
 

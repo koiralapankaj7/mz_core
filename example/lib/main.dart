@@ -40,7 +40,8 @@ class HomeScreen extends StatelessWidget {
         children: [
           _FeatureCard(
             title: 'State Management',
-            description: 'Controller with key-based notifications, '
+            description:
+                'Controller with key-based notifications, '
                 'priorities, and predicates',
             icon: Icons.settings_input_component,
             color: Colors.blue,
@@ -59,9 +60,7 @@ class HomeScreen extends StatelessWidget {
             color: Colors.green,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(
-                builder: (_) => const LoggerDemoScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const LoggerDemoScreen()),
             ),
           ),
           const SizedBox(height: 16),
@@ -149,16 +148,13 @@ class _FeatureCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    Text(title, style: Theme.of(context).textTheme.titleLarge),
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                     ),
                   ],
                 ),

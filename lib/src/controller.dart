@@ -424,7 +424,6 @@ class _SortedListMerger {
 /// | Key-based notifications | ❌ | ✅ |
 /// | Priority listeners | ❌ | ✅ |
 /// | Predicate filtering | ❌ | ✅ |
-/// | Batch updates | ❌ | ✅ |
 /// | Multiple callback signatures | ❌ | ✅ |
 /// | Memory efficiency | ✅ Best (~8KB) |
 /// ✅ Very Good (~12KB) |
@@ -549,26 +548,11 @@ class _SortedListMerger {
 /// ```
 /// {@end-tool}
 ///
-/// ## Batch Updates
-///
-/// {@tool snippet}
-/// Group multiple updates into one notification:
-///
-/// ```dart
-/// controller.batch(() {
-///   controller.updateName('Alice');
-///   controller.updateEmail('alice@example.com');
-///   controller.updateAge(30);
-/// }); // Single notification at the end
-/// ```
-/// {@end-tool}
-///
 /// ## Performance Tips
 ///
 /// 1. **Use key-based notifications** for selective rebuilds (biggest win)
 /// 2. **Use simple VoidCallbacks** when possible (no priority/predicate overhead)
-/// 3. **Use batch()** for multiple related updates
-/// 4. **Use predicates** to filter unnecessary notifications
+/// 3. **Use predicates** to filter unnecessary notifications
 ///
 /// ## Implementation Details
 ///
@@ -604,22 +588,84 @@ mixin class Controller implements ChangeNotifier {
 
   /// Finds a controller of type [T] in the widget tree.
   ///
+  /// ## The `listen` Parameter
+  ///
+  /// When [listen] is `true` (default), the widget registers a dependency on
+  /// the controller and rebuilds when the controller is replaced in the tree.
+  ///
+  /// **Set [listen] to `false` when accessing the controller from callbacks**,
+  /// such as `onPressed`, `onTap`, or other event handlers. This avoids
+  /// unnecessary rebuilds and follows the same pattern as `Provider.of`.
+  ///
+  /// ```dart
+  /// // In build method - use listen: true (default)
+  /// final controller = Controller.ofType<MyController>(context);
+  ///
+  /// // In callbacks - use listen: false
+  /// ElevatedButton(
+  ///   onPressed: () {
+  ///     final controller = Controller.ofType<MyController>(
+  ///       context,
+  ///       listen: false,
+  ///     );
+  ///     controller.submit();
+  ///   },
+  ///   child: const Text('Submit'),
+  /// )
+  /// ```
+  ///
   /// Throws a [FlutterError] if no controller of type [T] is found.
-  static T ofType<T extends Controller>(BuildContext context) {
-    final model =
-        context.dependOnInheritedWidgetOfExactType<_ControllerModel<T>>();
-    if (model == null) {
+  static T ofType<T extends Controller>(
+    BuildContext context, {
+    bool listen = true,
+  }) {
+    final controller = maybeOfType<T>(context, listen: listen);
+    if (controller == null) {
       throw FlutterError(
         'Unable to find Controller of type $T.\n'
         'Make sure that a ControllerProvider<$T> '
         'exists above this context.',
       );
     }
-    return model.controller;
+    return controller;
   }
 
   /// Finds a controller of type [T] in the widget tree, or null if not found.
-  static T? maybeOfType<T extends Controller>(BuildContext context) {
+  ///
+  /// ## The `listen` Parameter
+  ///
+  /// When [listen] is `true` (default), the widget registers a dependency on
+  /// the controller and rebuilds when the controller is replaced in the tree.
+  ///
+  /// **Set [listen] to `false` when accessing the controller from callbacks**,
+  /// such as `onPressed`, `onTap`, or other event handlers. This avoids
+  /// unnecessary rebuilds and follows the same pattern as `Provider.of`.
+  ///
+  /// ```dart
+  /// // In build method - use listen: true (default)
+  /// final controller = Controller.maybeOfType<MyController>(context);
+  ///
+  /// // In callbacks - use listen: false
+  /// GestureDetector(
+  ///   onTap: () {
+  ///     final controller = Controller.maybeOfType<MyController>(
+  ///       context,
+  ///       listen: false,
+  ///     );
+  ///     controller?.performAction();
+  ///   },
+  ///   child: const Text('Tap me'),
+  /// )
+  /// ```
+  static T? maybeOfType<T extends Controller>(
+    BuildContext context, {
+    bool listen = true,
+  }) {
+    if (!listen) {
+      final state =
+          context.findAncestorStateOfType<_ControllerProviderState<T>>();
+      return state?._controller;
+    }
     return context
         .dependOnInheritedWidgetOfExactType<_ControllerModel<T>>()
         ?.controller;
@@ -654,8 +700,6 @@ mixin class Controller implements ChangeNotifier {
   final _keyListeners = <Object, _ListenerSet>{};
   bool _isDisposed = false;
   bool _creationDispatched = false;
-  int _batchDepth = 0;
-  bool _pendingNotification = false;
 
   /// Whether this controller has been disposed.
   bool get isDisposed => _isDisposed;
@@ -763,11 +807,6 @@ mixin class Controller implements ChangeNotifier {
     bool includeGlobalListeners = true,
   }) {
     if (_isDisposed) return;
-
-    if (_batchDepth > 0) {
-      _pendingNotification = true;
-      return;
-    }
 
     // FAST PATH 1: No key, just global listeners
     if (key == null) {
@@ -890,20 +929,6 @@ mixin class Controller implements ChangeNotifier {
             ),
           ),
         );
-      }
-    }
-  }
-
-  /// Batch multiple updates
-  void batch(VoidCallback updates) {
-    _batchDepth++;
-    try {
-      updates();
-    } finally {
-      _batchDepth--;
-      if (_batchDepth == 0 && _pendingNotification) {
-        _pendingNotification = false;
-        notifyListeners();
       }
     }
   }

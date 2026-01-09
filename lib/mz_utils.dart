@@ -42,8 +42,10 @@ library;
 
 export 'src/auto_dispose.dart';
 export 'src/controller.dart';
-export 'src/controller_watcher.dart';
+export 'src/debouncer.dart';
 export 'src/extensions.dart';
 export 'src/listenables.dart';
-export 'src/simple_logger.dart';
+export 'src/logger.dart';
+export 'src/memoizer.dart';
 export 'src/throttler.dart';
+export 'src/watcher.dart';

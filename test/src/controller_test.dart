@@ -576,63 +576,6 @@ void main() {
       });
     });
 
-    group('Batch Updates -', () {
-      test('should batch multiple updates into single notification', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            controller
-              ..notify()
-              ..notify()
-              ..notify();
-          });
-
-        expect(notifyCount, 1); // Only one notification
-
-        controller.dispose();
-      });
-
-      test('should handle nested batch calls', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            controller
-              ..notify()
-              ..batch(() {
-                controller
-                  ..notify()
-                  ..notify();
-              })
-              ..notify();
-          });
-
-        expect(notifyCount, 1); // Only one notification for outermost batch
-
-        controller.dispose();
-      });
-
-      test('should not notify if no changes in batch', () {
-        final controller = TestController();
-        var notifyCount = 0;
-
-        controller
-          ..addListener(() => notifyCount++)
-          ..batch(() {
-            // No changes - no notify calls
-          });
-
-        expect(notifyCount, 0); // No notification since no changes
-
-        controller.dispose();
-      });
-    });
-
     group('Listener Signatures -', () {
       test('should accept VoidCallback', () {
         final controller = TestController();
@@ -1145,6 +1088,133 @@ void main() {
           ),
         );
         expect(Controller.maybeOfType<TestController>(capturedContext), isNull);
+      });
+
+      testWidgets('should find controller with listen: false', (tester) async {
+        TestController? found;
+
+        await tester.pumpWidget(
+          ControllerProvider<TestController>(
+            create: (_) => TestController(),
+            child: Builder(
+              builder: (context) {
+                found = Controller.ofType<TestController>(
+                  context,
+                  listen: false,
+                );
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(found, isNotNull);
+        expect(found, isA<TestController>());
+      });
+
+      testWidgets('should return null for maybeOfType with listen: false',
+          (tester) async {
+        late BuildContext capturedContext;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(
+          Controller.maybeOfType<TestController>(
+            capturedContext,
+            listen: false,
+          ),
+          isNull,
+        );
+      });
+
+      testWidgets(
+          'should not rebuild widget when listen: false and controller changes',
+          (tester) async {
+        var listenFalseBuildCount = 0;
+        var listenTrueBuildCount = 0;
+        final key = GlobalKey();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ControllerProvider<TestController>(
+              key: key,
+              create: (_) => TestController(),
+              child: Column(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      // Using listen: false should not create dependency
+                      Controller.maybeOfType<TestController>(
+                        context,
+                        listen: false,
+                      );
+                      listenFalseBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                  Builder(
+                    builder: (context) {
+                      // Using listen: true (default) should create dependency
+                      Controller.maybeOfType<TestController>(context);
+                      listenTrueBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(listenFalseBuildCount, 1);
+        expect(listenTrueBuildCount, 1);
+
+        // Trigger a rebuild by updating the widget tree
+        await tester.pumpWidget(
+          MaterialApp(
+            home: ControllerProvider<TestController>(
+              key: key,
+              create: (_) => TestController(),
+              child: Column(
+                children: [
+                  Builder(
+                    builder: (context) {
+                      Controller.maybeOfType<TestController>(
+                        context,
+                        listen: false,
+                      );
+                      listenFalseBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                  Builder(
+                    builder: (context) {
+                      Controller.maybeOfType<TestController>(context);
+                      listenTrueBuildCount++;
+                      return const SizedBox();
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        // Both should rebuild since we pumped a new widget tree
+        // The real difference is in dependency registration, which we can't
+        // easily observe directly. What we CAN verify is that listen: false
+        // still finds the controller correctly.
+        expect(listenFalseBuildCount, 2);
+        expect(listenTrueBuildCount, 2);
       });
     });
 

@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mz_utils/src/debouncer.dart';
 import 'package:mz_utils/src/throttler.dart';
 
 void main() {
@@ -210,17 +211,26 @@ void main() {
   });
 
   group('Throttler Tests |', () {
+    tearDown(Throttler.cancelAll);
+
     test('should throttle with immediate call', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var callCount = 0;
 
       // First call should execute immediately
-      throttler.call(() => callCount++);
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => callCount++,
+      );
       expect(callCount, 1);
-      expect(throttler.isBusy, isTrue);
+      expect(Throttler.isBusy('test'), isTrue);
 
       // Second call during throttle should be queued
-      throttler.call(() => callCount++);
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => callCount++,
+      );
       expect(callCount, 1); // Still 1, second call queued
 
       // Wait for throttle to complete
@@ -228,121 +238,205 @@ void main() {
 
       // Queued call should have executed
       expect(callCount, 2);
-      expect(throttler.isBusy, isFalse);
-
-      throttler.dispose();
+      expect(Throttler.isBusy('test'), isFalse);
     });
 
     test('should throttle without immediate call', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var callCount = 0;
 
       // First call should not execute immediately
-      throttler.call(() => callCount++, immediateCall: false);
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => callCount++,
+        immediateCall: false,
+      );
       expect(callCount, 0);
-      expect(throttler.isBusy, isTrue);
+      expect(Throttler.isBusy('test'), isTrue);
 
       // Wait for throttle
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(callCount, 1);
-      expect(throttler.isBusy, isFalse);
-
-      throttler.dispose();
+      expect(Throttler.isBusy('test'), isFalse);
     });
 
     test('should override action with latest call', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var value = 0;
 
-      throttler
-        ..call(() => value = 1)
-        ..call(() => value = 2)
-        ..call(() => value = 3);
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => value = 1,
+      );
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => value = 2,
+      );
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => value = 3,
+      );
 
       // Wait for throttle
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       // Should have executed the last action
       expect(value, 3);
-
-      throttler.dispose();
     });
 
     test('should cancel pending action', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var executed = false;
 
-      throttler
-        ..call(() => executed = true, immediateCall: false)
-        ..cancel();
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => executed = true,
+        immediateCall: false,
+      );
+      Throttler.cancel('test');
 
       // Wait to ensure it doesn't execute
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(executed, isFalse);
-      expect(throttler.isBusy, isFalse);
-
-      throttler.dispose();
+      expect(Throttler.isBusy('test'), isFalse);
     });
 
-    test('should dispose throttler', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
-      var executed = false;
+    test('should cancel all throttlers', () async {
+      var first = false;
+      var second = false;
 
-      throttler
-        ..call(() => executed = true, immediateCall: false)
-        ..dispose();
+      Throttler.throttle(
+        'first',
+        const Duration(milliseconds: 100),
+        () => first = true,
+        immediateCall: false,
+      );
+      Throttler.throttle(
+        'second',
+        const Duration(milliseconds: 100),
+        () => second = true,
+        immediateCall: false,
+      );
+      Throttler.cancelAll();
 
-      // Wait to ensure it doesn't execute
+      // Wait to ensure they don't execute
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
-      expect(executed, isFalse);
-      expect(throttler.isBusy, isFalse);
+      expect(first, isFalse);
+      expect(second, isFalse);
     });
 
     test('should allow reuse after cancel', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var callCount = 0;
 
-      throttler
-        ..call(() => callCount++)
-        ..cancel()
-        // Use again
-        ..call(() => callCount++);
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => callCount++,
+      );
+      Throttler.cancel('test');
+      // Use again
+      Throttler.throttle(
+        'test',
+        const Duration(milliseconds: 100),
+        () => callCount++,
+      );
 
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       expect(callCount, 2);
-
-      throttler.dispose();
     });
 
     test('should handle rapid successive calls', () async {
-      final throttler = Throttler(const Duration(milliseconds: 100));
       var finalValue = 0;
 
       // Make many rapid calls
       for (var i = 1; i <= 10; i++) {
-        throttler.call(() => finalValue = i);
+        Throttler.throttle(
+          'test',
+          const Duration(milliseconds: 100),
+          () => finalValue = i,
+        );
       }
 
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
       // Should have executed first immediately and last after throttle
       expect(finalValue, 10);
+    });
 
-      throttler.dispose();
+    test('should count active operations', () async {
+      expect(Throttler.count(), 0);
+
+      Throttler.throttle('first', const Duration(milliseconds: 100), () {});
+      Throttler.throttle('second', const Duration(milliseconds: 100), () {});
+
+      expect(Throttler.count(), 2);
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(Throttler.count(), 0);
+    });
+
+    test('should check if operation is active', () async {
+      expect(Throttler.isActive('test'), isFalse);
+
+      Throttler.throttle('test', const Duration(milliseconds: 100), () {});
+      expect(Throttler.isActive('test'), isTrue);
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(Throttler.isActive('test'), isFalse);
+    });
+
+    test('should handle multiple operations with different tags', () async {
+      var first = 0;
+      var second = 0;
+
+      Throttler.throttle(
+        'first',
+        const Duration(milliseconds: 50),
+        () => first++,
+      );
+      Throttler.throttle(
+        'second',
+        const Duration(milliseconds: 100),
+        () => second++,
+      );
+
+      // Both should execute immediately
+      expect(first, 1);
+      expect(second, 1);
+
+      // Queue more
+      Throttler.throttle(
+        'first',
+        const Duration(milliseconds: 50),
+        () => first++,
+      );
+      Throttler.throttle(
+        'second',
+        const Duration(milliseconds: 100),
+        () => second++,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      expect(first, 2);
+      expect(second, 2);
     });
   });
 
-  group('AdvanceDebouncer Tests |', () {
-    tearDown(AdvanceDebouncer.cancelAll);
+  group('Debouncer Async Tests |', () {
+    tearDown(Debouncer.cancelAll);
 
     test('should debounce async function', () async {
       var executionCount = 0;
 
-      final debounced = AdvanceDebouncer.debounce<String, int>(
+      final debounced = Debouncer.debounceAsync<String, int>(
         'test',
         (value) async {
           executionCount++;
@@ -370,7 +464,7 @@ void main() {
     test('should execute immediately with Duration.zero', () async {
       var executionCount = 0;
 
-      final debounced = AdvanceDebouncer.debounce<String, int>(
+      final debounced = Debouncer.debounceAsync<String, int>(
         'test',
         (value) async {
           executionCount++;
@@ -386,7 +480,7 @@ void main() {
     });
 
     test('should fire debounced function immediately', () async {
-      final debounced = AdvanceDebouncer.debounce<String, int>(
+      final debounced = Debouncer.debounceAsync<String, int>(
         'test',
         (value) async => 'Result: $value',
         duration: const Duration(milliseconds: 100),
@@ -396,14 +490,14 @@ void main() {
       unawaited(debounced(5));
 
       // Fire immediately
-      final fireFunc = AdvanceDebouncer.fire<String, int>('test');
+      final fireFunc = Debouncer.fireAsync<String, int>('test');
       final result = await fireFunc(10);
 
       expect(result, 'Result: 10');
     });
 
     test('should return null when firing non-existent tag', () async {
-      final fireFunc = AdvanceDebouncer.fire<String, int>('nonexistent');
+      final fireFunc = Debouncer.fireAsync<String, int>('nonexistent');
       final result = await fireFunc(42);
 
       expect(result, isNull);
@@ -412,7 +506,7 @@ void main() {
     test('should cancel debounce operation', () async {
       var executed = false;
 
-      final debounced = AdvanceDebouncer.debounce<void, int>(
+      final debounced = Debouncer.debounceAsync<void, int>(
         'test',
         (value) async {
           executed = true;
@@ -423,7 +517,7 @@ void main() {
       unawaited(debounced(42));
 
       // Cancel before execution
-      AdvanceDebouncer.cancel('test');
+      Debouncer.cancel('test');
 
       // Wait to ensure it doesn't execute
       await Future<void>.delayed(const Duration(milliseconds: 150));
@@ -435,7 +529,7 @@ void main() {
       var first = false;
       var second = false;
 
-      final debounced1 = AdvanceDebouncer.debounce<void, int>(
+      final debounced1 = Debouncer.debounceAsync<void, int>(
         'first',
         (value) async {
           first = true;
@@ -443,7 +537,7 @@ void main() {
         duration: const Duration(milliseconds: 100),
       );
 
-      final debounced2 = AdvanceDebouncer.debounce<void, int>(
+      final debounced2 = Debouncer.debounceAsync<void, int>(
         'second',
         (value) async {
           second = true;
@@ -454,7 +548,7 @@ void main() {
       unawaited(debounced1(1));
       unawaited(debounced2(2));
 
-      AdvanceDebouncer.cancelAll();
+      Debouncer.cancelAll();
 
       await Future<void>.delayed(const Duration(milliseconds: 150));
 
@@ -463,37 +557,37 @@ void main() {
     });
 
     test('should count active operations', () async {
-      expect(AdvanceDebouncer.count(), 0);
+      expect(Debouncer.count(), 0);
 
-      final debounced1 = AdvanceDebouncer.debounce<void, int>(
+      final debounced1 = Debouncer.debounceAsync<void, int>(
         'first',
         (value) async {},
         duration: const Duration(milliseconds: 100),
       );
 
-      final debounced2 = AdvanceDebouncer.debounce<void, int>(
+      final debounced2 = Debouncer.debounceAsync<void, int>(
         'second',
         (value) async {},
         duration: const Duration(milliseconds: 100),
       );
 
       unawaited(debounced1(1));
-      expect(AdvanceDebouncer.count(), 1);
+      expect(Debouncer.count(), 1);
 
       unawaited(debounced2(2));
-      expect(AdvanceDebouncer.count(), 2);
+      expect(Debouncer.count(), 2);
 
-      AdvanceDebouncer.cancel('first');
-      expect(AdvanceDebouncer.count(), 1);
+      Debouncer.cancel('first');
+      expect(Debouncer.count(), 1);
 
-      AdvanceDebouncer.cancelAll();
-      expect(AdvanceDebouncer.count(), 0);
+      Debouncer.cancelAll();
+      expect(Debouncer.count(), 0);
     });
 
     test('should check if operation is active', () async {
-      expect(AdvanceDebouncer.isActive('test'), isFalse);
+      expect(Debouncer.isActive('test'), isFalse);
 
-      final debounced = AdvanceDebouncer.debounce<void, int>(
+      final debounced = Debouncer.debounceAsync<void, int>(
         'test',
         (value) async {},
         duration: const Duration(milliseconds: 100),
@@ -501,17 +595,17 @@ void main() {
 
       unawaited(debounced(42));
 
-      expect(AdvanceDebouncer.isActive('test'), isTrue);
+      expect(Debouncer.isActive('test'), isTrue);
 
-      AdvanceDebouncer.cancel('test');
+      Debouncer.cancel('test');
 
-      expect(AdvanceDebouncer.isActive('test'), isFalse);
+      expect(Debouncer.isActive('test'), isFalse);
     });
 
     test('should handle null duration with default', () async {
       var executed = false;
 
-      final debounced = AdvanceDebouncer.debounce<void, int>(
+      final debounced = Debouncer.debounceAsync<void, int>(
         'test',
         (value) async {
           executed = true;
@@ -528,7 +622,7 @@ void main() {
     });
 
     test('should handle type safety with generics', () async {
-      final debounced = AdvanceDebouncer.debounce<List<String>, String>(
+      final debounced = Debouncer.debounceAsync<List<String>, String>(
         'search',
         (query) async {
           return ['result1-$query', 'result2-$query'];
@@ -546,7 +640,7 @@ void main() {
       var firstValue = 0;
       var secondValue = 0;
 
-      final first = AdvanceDebouncer.debounce<void, int>(
+      final first = Debouncer.debounceAsync<void, int>(
         'first',
         (value) async {
           firstValue = value;
@@ -554,7 +648,7 @@ void main() {
         duration: const Duration(milliseconds: 50),
       );
 
-      final second = AdvanceDebouncer.debounce<void, int>(
+      final second = Debouncer.debounceAsync<void, int>(
         'second',
         (value) async {
           secondValue = value;
@@ -575,7 +669,7 @@ void main() {
       var executionCount = 0;
 
       // Create first debounce
-      final first = AdvanceDebouncer.debounce<String, int>(
+      final first = Debouncer.debounceAsync<String, int>(
         'shared-tag',
         (value) async {
           executionCount++;
@@ -587,7 +681,7 @@ void main() {
       unawaited(first(1));
 
       // Create second debounce with same tag
-      final second = AdvanceDebouncer.debounce<String, int>(
+      final second = Debouncer.debounceAsync<String, int>(
         'shared-tag',
         (value) async {
           executionCount++;

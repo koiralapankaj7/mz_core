@@ -35,7 +35,8 @@ class _ExtensionsDemoScreenState extends State<ExtensionsDemoScreen> {
     final found = items.firstWhereWithIndexOrNull((e) => e.startsWith('b'));
     final index = items.indexOf('cherry');
 
-    _iterableResult = '''
+    _iterableResult =
+        '''
 Original: $items
 
 toIndexedMap:
@@ -69,7 +70,8 @@ indexOf('grape'): ${items.indexOf('grape')}
     final copy5 = [1, 2, 3, 2, 4, 2];
     copy5.removeAll([2], firstOccurrences: false);
 
-    _listResult = '''
+    _listResult =
+        '''
 removeFirstWhere (n > 2):
 Original: $numbers
 Removed: $removed1
@@ -99,7 +101,8 @@ Result: $copy5
     final removed = set.removeAndReturn(2);
     final notFound = set.removeAndReturn(5);
 
-    _setResult = '''
+    _setResult =
+        '''
 removeAndReturn(2):
 Original: {1, 2, 3}
 Removed: $removed
@@ -111,17 +114,14 @@ Result: $notFound (not in set)
   }
 
   void _runStringExamples() {
-    final examples = [
-      'helloWorld',
-      'user_name',
-      'API-Key',
-      'HTTPSConnection',
-    ];
+    final examples = ['helloWorld', 'user_name', 'API-Key', 'HTTPSConnection'];
 
-    final results =
-        examples.map((e) => '$e -> ${e.toCapitalizedWords()}').join('\n');
+    final results = examples
+        .map((e) => '$e -> ${e.toCapitalizedWords()}')
+        .join('\n');
 
-    _stringResult = '''
+    _stringResult =
+        '''
 toCapitalizedWords():
 
 $results
@@ -129,18 +129,14 @@ $results
   }
 
   void _runNumExamples() {
-    final examples = [
-      5.0,
-      5.123,
-      5.789,
-      10.0,
-      3.14159,
-    ];
+    final examples = [5.0, 5.123, 5.789, 10.0, 3.14159];
 
-    final results =
-        examples.map((n) => '$n -> ${n.toStringAsFixedFloor(2)}').join('\n');
+    final results = examples
+        .map((n) => '$n -> ${n.toStringAsFixedFloor(2)}')
+        .join('\n');
 
-    _numResult = '''
+    _numResult =
+        '''
 toStringAsFixedFloor(2):
 (integers show 1 decimal, others show 2)
 
@@ -262,10 +258,7 @@ class _ExampleCard extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: color[700],
-        ),
+        style: TextStyle(fontWeight: FontWeight.bold, color: color[700]),
       ),
     );
   }
@@ -284,10 +277,7 @@ class _CodeResultCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: SelectableText(
           result,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 12,
-          ),
+          style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
         ),
       ),
     );
@@ -312,16 +302,16 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           description,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
         ),
         const SizedBox(height: 12),
         child,

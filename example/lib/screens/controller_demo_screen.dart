@@ -241,9 +241,9 @@ class _FormDemo extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Each preview only rebuilds when its specific field changes!',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -279,10 +279,7 @@ class _FormField extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
           Expanded(
             child: Text(
               displayValue.isEmpty ? '(empty)' : displayValue,
@@ -361,11 +358,11 @@ class _PriorityDemoState extends State<_PriorityDemo> {
                     ),
                     const SizedBox(height: 8),
                     ...ctrl.log.asMap().entries.map(
-                          (entry) => Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text('${entry.key + 1}. ${entry.value}'),
-                          ),
-                        ),
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text('${entry.key + 1}. ${entry.value}'),
+                      ),
+                    ),
                   ],
                 );
               },
@@ -373,9 +370,9 @@ class _PriorityDemoState extends State<_PriorityDemo> {
             const SizedBox(height: 8),
             Text(
               'Higher priority listeners execute first!',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
             ),
           ],
         ),
@@ -385,10 +382,7 @@ class _PriorityDemoState extends State<_PriorityDemo> {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({
-    required this.title,
-    required this.child,
-  });
+  const _Section({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -400,9 +394,9 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         child,

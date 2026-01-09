@@ -1,1 +1,7 @@
 include: package:flutter_lints/flutter.yaml
+
+# New plugin system (Dart 3.10+ / Flutter 3.38+)
+# plugins is a TOP-LEVEL section, not under analyzer
+plugins:
+  mz_lints:
+    path: ../packages/mz_lints

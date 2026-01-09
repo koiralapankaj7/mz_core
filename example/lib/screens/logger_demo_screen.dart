@@ -79,20 +79,14 @@ class _LoggerDemoScreenState extends State<LoggerDemoScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
-            flex: 2,
-            child: _LogControls(logger: _logger),
-          ),
+          Expanded(flex: 2, child: _LogControls(logger: _logger)),
           const Divider(height: 1),
           _OutputFormatSelector(
             selectedFormat: _outputFormat,
             onFormatChanged: _changeOutputFormat,
           ),
           const Divider(height: 1),
-          Expanded(
-            flex: 3,
-            child: _LogOutput(logs: _logOutput),
-          ),
+          Expanded(flex: 3, child: _LogOutput(logs: _logOutput)),
         ],
       ),
     );
@@ -163,9 +157,9 @@ class _LogControls extends StatelessWidget {
       children: [
         Text(
           'Log Levels',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Wrap(
@@ -181,37 +175,27 @@ class _LogControls extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () => logger.debug('Debugging information'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyan,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan),
               child: const Text('DEBUG'),
             ),
             ElevatedButton(
               onPressed: () => logger.info('Info message'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               child: const Text('INFO'),
             ),
             ElevatedButton(
               onPressed: () => logger.warning('Warning message'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               child: const Text('WARNING'),
             ),
             ElevatedButton(
               onPressed: () => logger.error('Error occurred'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('ERROR'),
             ),
             ElevatedButton(
               onPressed: () => logger.fatal('Critical failure'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
               child: const Text('FATAL'),
             ),
           ],
@@ -219,9 +203,9 @@ class _LogControls extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Log Groups',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
@@ -232,9 +216,9 @@ class _LogControls extends StatelessWidget {
         const SizedBox(height: 24),
         Text(
           'Advanced Features',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
@@ -253,17 +237,12 @@ class _LogControls extends StatelessWidget {
   }
 
   Future<void> _logGroupExample(SimpleLogger logger) async {
-    await logger.group<void>(
-      'api-call',
-      'API Request',
-      () async {
-        logger
-          ..debug('Preparing request', groupId: 'api-call')
-          ..info('Sending GET /users/123', groupId: 'api-call')
-          ..debug('Response received (200 OK)', groupId: 'api-call');
-      },
-      description: 'Fetching user data',
-    );
+    await logger.group<void>('api-call', 'API Request', () async {
+      logger
+        ..debug('Preparing request', groupId: 'api-call')
+        ..info('Sending GET /users/123', groupId: 'api-call')
+        ..debug('Response received (200 OK)', groupId: 'api-call');
+    }, description: 'Fetching user data');
   }
 
   void _logWithMetadata(SimpleLogger logger) {
@@ -301,10 +280,7 @@ class _LogOutput extends StatelessWidget {
           ? Center(
               child: Text(
                 'No logs yet.\nClick buttons above to generate logs.',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.grey[400], fontSize: 16),
                 textAlign: TextAlign.center,
               ),
             )
@@ -468,8 +444,9 @@ class _CompactOutput extends LogOutput {
   void writeEntry(LogEntry entry) {
     final level = entry.level.name.toUpperCase().substring(0, 1);
     final message = entry.message ?? '';
-    final duration =
-        entry.duration != null ? ' (${entry.duration!.inMilliseconds}ms)' : '';
+    final duration = entry.duration != null
+        ? ' (${entry.duration!.inMilliseconds}ms)'
+        : '';
 
     output.add('[$level] $message$duration');
     onUpdate();
@@ -478,8 +455,9 @@ class _CompactOutput extends LogOutput {
   void _writeEntryWithoutUpdate(LogEntry entry) {
     final level = entry.level.name.toUpperCase().substring(0, 1);
     final message = entry.message ?? '';
-    final duration =
-        entry.duration != null ? ' (${entry.duration!.inMilliseconds}ms)' : '';
+    final duration = entry.duration != null
+        ? ' (${entry.duration!.inMilliseconds}ms)'
+        : '';
 
     output.add('[$level] $message$duration');
   }
