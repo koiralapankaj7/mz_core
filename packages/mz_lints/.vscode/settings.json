@@ -1,9 +1,0 @@
-{
-  "dart.runTestsOnDevice": false,
-  "dart.coverageExcludeGlobs": [
-    "**/fixes/**",
-    "**/src/fixes/**",
-    "lib/src/fixes/**",
-    "lib/src/fixes/*.dart"
-  ]
-}
