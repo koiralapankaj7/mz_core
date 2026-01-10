@@ -14,7 +14,7 @@ typedef LogObserver = void Function(LogEntry entry, LogGroup? group);
 /// Function signature for handling logging errors.
 typedef LogErrorHandler = void Function(Object error, StackTrace? stackTrace);
 
-/// {@template mz_utils.LogLevel}
+/// {@template mz_core.LogLevel}
 /// Log severity levels for filtering and categorizing log messages.
 ///
 /// [LogLevel] defines six severity levels from lowest to highest:
@@ -137,7 +137,7 @@ enum LogLevel {
   bool operator <(LogLevel other) => severity < other.severity;
 }
 
-/// {@template mz_utils.LogEntry}
+/// {@template mz_core.LogEntry}
 /// Represents a single structured log entry with metadata.
 ///
 /// [LogEntry] contains all information about a log event including:
@@ -220,7 +220,7 @@ enum LogLevel {
 class LogEntry {
   /// Creates a new log entry with the specified properties.
   ///
-  /// {@macro mz_utils.LogEntry}
+  /// {@macro mz_core.LogEntry}
   ///
   /// The [name] parameter categorizes the log (e.g., 'Database', 'Auth').
   ///
@@ -328,7 +328,7 @@ class LogEntry {
   }
 }
 
-/// {@template mz_utils.LogGroup}
+/// {@template mz_core.LogGroup}
 /// Represents a group of related log entries.
 ///
 /// [LogGroup] organizes related [LogEntry] objects together for batch output.
@@ -395,7 +395,7 @@ class LogEntry {
 class LogGroup {
   /// Creates a new log group with the specified properties.
   ///
-  /// {@macro mz_utils.LogGroup}
+  /// {@macro mz_core.LogGroup}
   ///
   /// The [id] parameter uniquely identifies this group. Must be unique within
   /// the logger instance.
@@ -440,7 +440,7 @@ class LogGroup {
   }
 }
 
-/// {@template mz_utils.SimpleLogger}
+/// {@template mz_core.SimpleLogger}
 /// A flexible logging system with level filtering, sampling, and group support.
 ///
 /// [SimpleLogger] provides structured logging with the following features:
@@ -543,7 +543,7 @@ class LogGroup {
 class SimpleLogger {
   /// Creates a new logger instance.
   ///
-  /// {@macro mz_utils.SimpleLogger}
+  /// {@macro mz_core.SimpleLogger}
   ///
   /// The [output] parameter specifies where logs are written. Defaults to
   /// [ConsoleOutput] if not provided.
@@ -648,7 +648,7 @@ class SimpleLogger {
     _isEnabled = value;
   }
 
-  /// {@template mz_utils.SimpleLogger.guard}
+  /// {@template mz_core.SimpleLogger.guard}
   /// Executes [callback] only if logging is enabled.
   ///
   /// This is useful for expensive logging operations that should only run when
@@ -2165,7 +2165,7 @@ class LogFormatter {
   }
 }
 
-/// {@template mz_utils.SimpleLoggerX}
+/// {@template mz_core.SimpleLoggerX}
 /// Convenience extension methods for [SimpleLogger].
 ///
 /// [SimpleLoggerX] provides shorthand methods for logging at each severity

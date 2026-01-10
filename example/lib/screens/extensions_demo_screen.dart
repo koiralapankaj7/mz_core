@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 class ExtensionsDemoScreen extends StatefulWidget {
   const ExtensionsDemoScreen({super.key});

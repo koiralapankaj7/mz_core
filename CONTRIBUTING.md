@@ -1,6 +1,6 @@
-# Contributing to mz_utils
+# Contributing to mz_core
 
-Thank you for your interest in contributing to mz_utils! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to mz_core! This document provides guidelines for contributing to the project.
 
 ## Code of Conduct
 
@@ -139,8 +139,8 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/koiralapankaj7/mz_utils.git
-   cd mz_utils
+   git clone https://github.com/koiralapankaj7/mz_core.git
+   cd mz_core
    ```
 
 2. Install dependencies
@@ -165,13 +165,13 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ## Project Structure
 
 ```dart
-mz_utils/
+mz_core/
 ├── lib/
-│   ├── mz_utils.dart          # Main export file
+│   ├── mz_core.dart          # Main export file
 │   └── src/                   # Implementation files
 │       ├── controller.dart
 │       ├── auto_dispose.dart
-│       ├── simple_logger.dart
+│       ├── logger.dart
 │       └── ...
 ├── test/                      # Test files
 ├── example/                   # Example Flutter app
@@ -230,12 +230,12 @@ testWidgets('should display count', (tester) async {
 
 If you have questions about contributing:
 
-- Open a [GitHub Discussion](https://github.com/koiralapankaj7/mz_utils/discussions)
+- Open a [GitHub Discussion](https://github.com/koiralapankaj7/mz_core/discussions)
 - Create an issue with the `question` label
 - Review existing issues and discussions
 
 ## License
 
-By contributing to mz_utils, you agree that your contributions will be licensed under the BSD-3-Clause License.
+By contributing to mz_core, you agree that your contributions will be licensed under the BSD-3-Clause License.
 
-Thank you for contributing to mz_utils! 🎉
+Thank you for contributing to mz_core! 🎉

@@ -1,16 +1,49 @@
 // coverage:ignore-file
 // Fixes require an analysis server context to test, which is not available
 // in unit tests. These are tested through integration tests with the IDE.
+
 import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/source/source_range.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
-/// A quick fix that adds a removeListener call to the dispose() method.
+/// A quick fix that adds a `removeListener` call to the `dispose()` method.
 ///
-/// This fix handles adding the removeListener call for listeners that
-/// were added but not removed.
+/// This fix is triggered by the `remove_listener` lint rule when an
+/// `addListener` call is detected without a matching `removeListener` in
+/// `dispose()`.
+///
+/// ## Example
+///
+/// Before fix:
+/// ```dart
+/// @override
+/// void initState() {
+///   super.initState();
+///   _controller.addListener(_onChanged);
+/// }
+///
+/// @override
+/// void dispose() {
+///   super.dispose();
+/// }
+/// ```
+///
+/// After fix:
+/// ```dart
+/// @override
+/// void initState() {
+///   super.initState();
+///   _controller.addListener(_onChanged);
+/// }
+///
+/// @override
+/// void dispose() {
+///   _controller.removeListener(_onChanged);
+///   super.dispose();
+/// }
+/// ```
 class AddRemoveListenerCall extends ResolvedCorrectionProducer {
   static const _fixKind = FixKind(
     'mz_lints.fix.addRemoveListenerCall',
@@ -24,18 +57,23 @@ class AddRemoveListenerCall extends ResolvedCorrectionProducer {
     "Add all missing 'removeListener' calls in file",
   );
 
+  /// Creates an [AddRemoveListenerCall] fix producer.
   AddRemoveListenerCall({required super.context});
 
+  /// This fix can be applied to multiple occurrences in a single file.
   @override
   CorrectionApplicability get applicability =>
       CorrectionApplicability.acrossSingleFile;
 
+  /// The kind of fix for single application.
   @override
   FixKind get fixKind => _fixKind;
 
+  /// The kind of fix for batch application across a file.
   @override
   FixKind get multiFixKind => _multiFixKind;
 
+  /// Computes and applies the fix by adding a `removeListener` call.
   @override
   Future<void> compute(ChangeBuilder builder) async {
     // The node should be the MethodInvocation (addListener call)
@@ -197,9 +235,25 @@ class AddRemoveListenerCall extends ResolvedCorrectionProducer {
   }
 }
 
-/// A quick fix that wraps the listener registration with auto-dispose.
+/// A quick fix that replaces `addListener` with `addAutoDisposeListener`.
 ///
-/// This suggests using addAutoDisposeListener if using mz_utils.
+/// This fix is an alternative to [AddRemoveListenerCall] that uses the
+/// mz_utils auto-dispose pattern instead of manual listener management.
+///
+/// ## Example
+///
+/// Before fix:
+/// ```dart
+/// _controller.addListener(_onChanged);
+/// ```
+///
+/// After fix:
+/// ```dart
+/// addAutoDisposeListener(_controller, _onChanged);
+/// ```
+///
+/// **Note:** This requires the `addAutoDisposeListener` extension method
+/// from mz_utils to be available in the current scope.
 class UseAutoDisposeListener extends ResolvedCorrectionProducer {
   static const _fixKind = FixKind(
     'mz_lints.fix.useAutoDisposeListener',
@@ -213,18 +267,23 @@ class UseAutoDisposeListener extends ResolvedCorrectionProducer {
     "Use 'addAutoDisposeListener' everywhere in file",
   );
 
+  /// Creates a [UseAutoDisposeListener] fix producer.
   UseAutoDisposeListener({required super.context});
 
+  /// This fix can be applied to multiple occurrences in a single file.
   @override
   CorrectionApplicability get applicability =>
       CorrectionApplicability.acrossSingleFile;
 
+  /// The kind of fix for single application.
   @override
   FixKind get fixKind => _fixKind;
 
+  /// The kind of fix for batch application across a file.
   @override
   FixKind get multiFixKind => _multiFixKind;
 
+  /// Computes and applies the fix by replacing with `addAutoDisposeListener`.
   @override
   Future<void> compute(ChangeBuilder builder) async {
     // The node should be the MethodInvocation (addListener call)

@@ -2,7 +2,7 @@
 // ignore_for_file: dispose_notifier, remove_listener, controller_listen_in_callback
 
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 /// Example file with intentional lint violations for testing mz_lints.
 ///

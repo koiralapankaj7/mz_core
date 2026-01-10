@@ -1,8 +1,5 @@
 import 'dart:async';
 
-import 'package:mz_utils/src/debouncer.dart';
-import 'package:mz_utils/src/throttler.dart';
-
 /// A cached entry with completer and optional expiration.
 class _MemoizerEntry<T> {
   _MemoizerEntry(this.completer, this.expiresAt);
@@ -30,7 +27,7 @@ class _MemoizerEntry<T> {
   bool get hasValue => _hasValue;
 }
 
-/// {@template mz_utils.Memoizer}
+/// {@template mz_core.Memoizer}
 /// A static utility class for memoizing (caching) expensive async operations.
 ///
 /// Memoization stores the results of function calls and returns the cached

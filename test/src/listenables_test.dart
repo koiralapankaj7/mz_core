@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/listenables.dart';
+import 'package:mz_core/src/listenables.dart';
 
 void main() {
   group('ListenableList Tests |', () {

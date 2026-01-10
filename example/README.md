@@ -1,3 +1,3 @@
-# mz_utils_example
+# mz_core_example
 
-A new Flutter project.
+A comprehensive example app demonstrating all mz_core features.

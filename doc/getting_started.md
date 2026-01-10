@@ -1,14 +1,14 @@
-# Getting Started with mz_utils
+# Getting Started with mz_core
 
-This guide helps you integrate and use mz_utils in your Flutter or Dart project.
+This guide helps you integrate and use mz_core in your Flutter or Dart project.
 
 ## Installation
 
-Add mz_utils to your `pubspec.yaml`:
+Add mz_core to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_utils: ^1.2.0
+  mz_core: ^1.2.0
 ```
 
 Run:
@@ -22,7 +22,7 @@ flutter pub get
 Import the package in your Dart files:
 
 ```dart
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 ```
 
 ## Quick Start
@@ -33,7 +33,7 @@ Controllers manage state and notify listeners when values change:
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 class CounterController with Controller {
   int _count = 0;
@@ -194,7 +194,7 @@ Prevent rapid-fire function calls (e.g., search as you type):
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 class SearchWidget extends StatefulWidget {
   const SearchWidget({super.key});
@@ -372,7 +372,7 @@ void main() {
 
 - Read [Core Concepts](core_concepts.md) to understand key patterns
 - See [Troubleshooting](troubleshooting.md) for common issues
-- Explore the [API documentation](https://pub.dev/documentation/mz_utils/latest/)
+- Explore the [API documentation](https://pub.dev/documentation/mz_core/latest/)
 
 ## Common Patterns
 
@@ -646,7 +646,7 @@ A: Use dynamic tags like `'product-$id'`. This is similar to how Debouncer uses 
 
 **Q: How do I choose between Controller and ChangeNotifier?**
 
-A: Use `Controller` from mz_utils when you need additional features like lifecycle management, priority listeners, or filtered notifications. Use Flutter's `ChangeNotifier` for simple value changes.
+A: Use `Controller` from mz_core when you need additional features like lifecycle management, priority listeners, or filtered notifications. Use Flutter's `ChangeNotifier` for simple value changes.
 
 **Q: Can I use multiple outputs with SimpleLogger?**
 

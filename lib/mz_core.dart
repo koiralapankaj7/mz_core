@@ -13,7 +13,7 @@
 ///
 /// Import the package:
 /// ```dart
-/// import 'package:mz_utils/mz_utils.dart';
+/// import 'package:mz_core/mz_core.dart';
 /// ```
 ///
 /// ## Examples

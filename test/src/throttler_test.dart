@@ -1,8 +1,8 @@
 import 'dart:async' show unawaited;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/debouncer.dart';
-import 'package:mz_utils/src/throttler.dart';
+import 'package:mz_core/src/debouncer.dart';
+import 'package:mz_core/src/throttler.dart';
 
 void main() {
   group('Debouncer Tests |', () {

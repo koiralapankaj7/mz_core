@@ -1,8 +1,8 @@
-name: mz_utils
+name: mz_core
 description: Flutter utilities for state management, logging, collections, and rate limiting with auto-disposal and extensions.
 version: 1.2.0
-repository: https://github.com/koiralapankaj7/mz_utils
-issue_tracker: https://github.com/koiralapankaj7/mz_utils/issues
+repository: https://github.com/koiralapankaj7/mz_core
+issue_tracker: https://github.com/koiralapankaj7/mz_core/issues
 
 environment:
   sdk: ^3.3.0

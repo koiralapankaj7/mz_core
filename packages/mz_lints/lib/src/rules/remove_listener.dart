@@ -10,10 +10,15 @@ import 'package:mz_lints/src/utils/ignore_info.dart';
 
 /// Extracts the target name from an expression for listener matching.
 ///
-/// Returns the string representation of the target, handling:
-/// - SimpleIdentifier: `_controller` -> `_controller`
-/// - PrefixedIdentifier: `widget.controller` -> `widget.controller`
-/// - PropertyAccess: `a.b.c` -> `a.b.c`
+/// Returns the string representation of the target expression, handling:
+/// - [SimpleIdentifier]: `_controller` → `"_controller"`
+/// - [PrefixedIdentifier]: `widget.controller` → `"widget.controller"`
+/// - [PropertyAccess]: `a.b.c` → `"a.b.c"`
+///
+/// Returns `null` if the target cannot be converted to a string.
+///
+/// This is used internally by [RemoveListener] to match `addListener` calls
+/// with their corresponding `removeListener` calls.
 String? getTargetName(Expression? target) {
   if (target == null) return null;
   if (target is SimpleIdentifier) return target.name;

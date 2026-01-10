@@ -1,11 +1,11 @@
-# mz_utils
+# mz_core
 
 A collection of production-ready Flutter and Dart utilities for state management, logging, collections, and rate limiting.
 
-[![pub package](https://img.shields.io/pub/v/mz_utils.svg)](https://pub.dev/packages/mz_utils)
+[![pub package](https://img.shields.io/pub/v/mz_core.svg)](https://pub.dev/packages/mz_core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![codecov](https://codecov.io/gh/koiralapankaj7/mz_utils/branch/main/graph/badge.svg)](https://codecov.io/gh/koiralapankaj7/mz_utils)
-[![CI](https://github.com/koiralapankaj7/mz_utils/workflows/CI/badge.svg)](https://github.com/koiralapankaj7/mz_utils/actions)
+[![codecov](https://codecov.io/gh/koiralapankaj7/mz_core/branch/main/graph/badge.svg)](https://codecov.io/gh/koiralapankaj7/mz_core)
+[![CI](https://github.com/koiralapankaj7/mz_core/workflows/CI/badge.svg)](https://github.com/koiralapankaj7/mz_core/actions)
 
 ## Features
 
@@ -25,7 +25,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_utils: ^1.2.0
+  mz_core: ^1.2.0
 ```
 
 Then run:
@@ -40,7 +40,7 @@ flutter pub get
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 // 1. Create a controller
 class CounterController with Controller {
@@ -237,7 +237,7 @@ The example app includes interactive demos for:
 | [Getting Started](doc/getting_started.md) | Step-by-step integration guide |
 | [Core Concepts](doc/core_concepts.md) | Architecture and design patterns |
 | [Troubleshooting](doc/troubleshooting.md) | Common issues and solutions |
-| [API Reference](https://pub.dev/documentation/mz_utils/latest/) | Complete API documentation |
+| [API Reference](https://pub.dev/documentation/mz_core/latest/) | Complete API documentation |
 
 ## Features in Detail
 
@@ -316,7 +316,7 @@ Complete example showing debounced API search:
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 import 'package:http/http.dart' as http;
 
 class SearchScreen extends StatefulWidget {
@@ -402,7 +402,7 @@ Complete example with multiple controllers:
 
 ```dart
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 class UserController with Controller {
   User? _user;
@@ -470,7 +470,7 @@ class _AppState extends State<App> {
 
 ## Testing
 
-mz_utils is fully tested with comprehensive test coverage:
+mz_core is fully tested with comprehensive test coverage:
 
 - Unit tests for all utilities
 - Widget tests for Flutter integrations
@@ -508,9 +508,9 @@ Developed and maintained by [Pankaj Koirala](https://github.com/koiralapankaj7).
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/koiralapankaj7/mz_utils/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/koiralapankaj7/mz_utils/discussions)
-- **Repository**: [GitHub](https://github.com/koiralapankaj7/mz_utils)
+- **Issues**: [GitHub Issues](https://github.com/koiralapankaj7/mz_core/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/koiralapankaj7/mz_core/discussions)
+- **Repository**: [GitHub](https://github.com/koiralapankaj7/mz_core)
 
 ## Related Packages
 

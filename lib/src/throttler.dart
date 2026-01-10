@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:mz_utils/src/debouncer.dart';
-
 class _ThrottlerOperation {
   _ThrottlerOperation(this.interval, this.onComplete);
 
@@ -40,7 +38,7 @@ class _ThrottlerOperation {
   }
 }
 
-/// {@template mz_utils.Throttler}
+/// {@template mz_core.Throttler}
 /// Static utility class for throttling function calls.
 ///
 /// [Throttler] limits how often a function can be called. Unlike debouncing
@@ -135,7 +133,7 @@ abstract class Throttler {
 
   /// Throttles execution of [action] for the given [tag].
   ///
-  /// {@macro mz_utils.Throttler}
+  /// {@macro mz_core.Throttler}
   ///
   /// The [tag] parameter uniquely identifies this throttle operation.
   ///
