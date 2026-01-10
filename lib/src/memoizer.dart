@@ -1,3 +1,7 @@
+/// @docImport 'debouncer.dart';
+/// @docImport 'throttler.dart';
+library;
+
 import 'dart:async';
 
 /// A cached entry with completer and optional expiration.

@@ -1,3 +1,6 @@
+/// @docImport 'throttler.dart';
+library;
+
 import 'dart:async';
 
 /// A void callback function type.
