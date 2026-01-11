@@ -95,4 +95,13 @@ jobs:
         run: dart pub global activate pana
 
       - name: Run pana
-        run: dart pub global run pana --no-warning
+        run: |
+          RESULT=$(dart pub global run pana --json .)
+          echo "$RESULT" | jq .
+          SCORE=$(echo "$RESULT" | jq '.scores.grantedPoints')
+          MAX=$(echo "$RESULT" | jq '.scores.maxPoints')
+          echo "Score: $SCORE/$MAX"
+          if [ "$SCORE" -lt "$MAX" ]; then
+            echo "::error::Pana score $SCORE is less than max $MAX"
+            exit 1
+          fi

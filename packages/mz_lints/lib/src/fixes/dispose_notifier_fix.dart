@@ -1,14 +1,45 @@
 // coverage:ignore-file
 // Fixes require an analysis server context to test, which is not available
 // in unit tests. These are tested through integration tests with the IDE.
+
 import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
-/// A quick fix that adds a dispose() method with the notifier disposal.
+/// A quick fix that creates a new `dispose()` method with notifier disposal.
 ///
-/// This fix is used when no dispose() method exists in the State class.
+/// This fix is triggered by the `dispose_notifier` lint rule when a
+/// `ChangeNotifier` field is used but the `State` class has no `dispose()`
+/// method.
+///
+/// ## Example
+///
+/// Before fix:
+/// ```dart
+/// class _MyState extends State<MyWidget> {
+///   final _controller = TextEditingController();
+///
+///   @override
+///   Widget build(BuildContext context) => TextField(controller: _controller);
+/// }
+/// ```
+///
+/// After fix:
+/// ```dart
+/// class _MyState extends State<MyWidget> {
+///   final _controller = TextEditingController();
+///
+///   @override
+///   Widget build(BuildContext context) => TextField(controller: _controller);
+///
+///   @override
+///   void dispose() {
+///     _controller.dispose();
+///     super.dispose();
+///   }
+/// }
+/// ```
 class AddDisposeMethod extends ResolvedCorrectionProducer {
   static const _fixKind = FixKind(
     'mz_lints.fix.addDisposeMethod',
@@ -22,18 +53,23 @@ class AddDisposeMethod extends ResolvedCorrectionProducer {
     'Add dispose() method everywhere in file',
   );
 
+  /// Creates an [AddDisposeMethod] fix producer.
   AddDisposeMethod({required super.context});
 
+  /// This fix can be applied to multiple occurrences in a single file.
   @override
   CorrectionApplicability get applicability =>
       CorrectionApplicability.acrossSingleFile;
 
+  /// The kind of fix for single application.
   @override
   FixKind get fixKind => _fixKind;
 
+  /// The kind of fix for batch application across a file.
   @override
   FixKind get multiFixKind => _multiFixKind;
 
+  /// Computes and applies the fix by adding a complete `dispose()` method.
   @override
   Future<void> compute(ChangeBuilder builder) async {
     // Find the variable declaration
@@ -71,10 +107,30 @@ class AddDisposeMethod extends ResolvedCorrectionProducer {
   }
 }
 
-/// A quick fix that adds a dispose call to an existing dispose() method.
+/// A quick fix that adds a dispose call to an existing `dispose()` method.
 ///
-/// This fix is used when a dispose() method exists but doesn't dispose
-/// the notifier.
+/// This fix is triggered by the `dispose_notifier` lint rule when a
+/// `ChangeNotifier` field is used but not disposed, and a `dispose()` method
+/// already exists.
+///
+/// ## Example
+///
+/// Before fix:
+/// ```dart
+/// @override
+/// void dispose() {
+///   super.dispose();
+/// }
+/// ```
+///
+/// After fix:
+/// ```dart
+/// @override
+/// void dispose() {
+///   _controller.dispose();
+///   super.dispose();
+/// }
+/// ```
 class AddDisposeCall extends ResolvedCorrectionProducer {
   static const _fixKind = FixKind(
     'mz_lints.fix.addDisposeCall',
@@ -90,21 +146,27 @@ class AddDisposeCall extends ResolvedCorrectionProducer {
 
   String? _fieldName;
 
+  /// Creates an [AddDisposeCall] fix producer.
   AddDisposeCall({required super.context});
 
+  /// This fix can be applied to multiple occurrences in a single file.
   @override
   CorrectionApplicability get applicability =>
       CorrectionApplicability.acrossSingleFile;
 
+  /// The kind of fix for single application.
   @override
   FixKind get fixKind => _fixKind;
 
+  /// The kind of fix for batch application across a file.
   @override
   FixKind get multiFixKind => _multiFixKind;
 
+  /// The arguments to substitute into the fix message.
   @override
   List<String> get fixArguments => [_fieldName ?? ''];
 
+  /// Computes and applies the fix by inserting a dispose call.
   @override
   Future<void> compute(ChangeBuilder builder) async {
     // Find the variable declaration

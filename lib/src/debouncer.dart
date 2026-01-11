@@ -1,6 +1,7 @@
-import 'dart:async';
+/// @docImport 'throttler.dart';
+library;
 
-import 'package:mz_utils/src/throttler.dart';
+import 'dart:async';
 
 /// A void callback function type.
 ///
@@ -56,7 +57,7 @@ class _CancelException implements Exception {
   const _CancelException();
 }
 
-/// {@template mz_utils.Debouncer}
+/// {@template mz_core.Debouncer}
 /// Static utility class for debouncing function calls.
 ///
 /// [Debouncer] delays function execution until calls stop for a specified
@@ -130,7 +131,7 @@ abstract class Debouncer {
 
   /// Delays execution of [onExecute] until calls stop for [duration].
   ///
-  /// {@macro mz_utils.Debouncer}
+  /// {@macro mz_core.Debouncer}
   ///
   /// Each call with the same [tag] cancels any previous pending operation and
   /// starts a new timer. The callback only executes after [duration] passes

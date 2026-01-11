@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:mz_utils_example/screens/controller_demo_screen.dart';
-import 'package:mz_utils_example/screens/logger_demo_screen.dart';
-import 'package:mz_utils_example/screens/rate_limiting_demo_screen.dart';
-import 'package:mz_utils_example/screens/collections_demo_screen.dart';
-import 'package:mz_utils_example/screens/extensions_demo_screen.dart';
+import 'package:mz_core_example/screens/controller_demo_screen.dart';
+import 'package:mz_core_example/screens/logger_demo_screen.dart';
+import 'package:mz_core_example/screens/rate_limiting_demo_screen.dart';
+import 'package:mz_core_example/screens/collections_demo_screen.dart';
+import 'package:mz_core_example/screens/extensions_demo_screen.dart';
 
 void main() {
-  runApp(const MzUtilsExampleApp());
+  runApp(const MzCoreExampleApp());
 }
 
-class MzUtilsExampleApp extends StatelessWidget {
-  const MzUtilsExampleApp({super.key});
+class MzCoreExampleApp extends StatelessWidget {
+  const MzCoreExampleApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'mz_utils Demo',
+      title: 'mz_core Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -32,7 +32,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('mz_utils Feature Demos'),
+        title: const Text('mz_core Feature Demos'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: ListView(

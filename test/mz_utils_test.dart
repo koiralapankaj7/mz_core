@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 void main() {
-  group('mz_utils library exports', () {
+  group('mz_core library exports', () {
     test('should create instances of exported classes', () {
       // Verify that key exports work by creating instances
       final logger = SimpleLogger();

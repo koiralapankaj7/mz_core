@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/auto_dispose.dart';
+import 'package:mz_core/src/auto_dispose.dart';
 
 // Test implementations
 class TestDisposableController extends DisposableController

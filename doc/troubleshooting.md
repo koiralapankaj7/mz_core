@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues and solutions when using mz_utils.
+Common issues and solutions when using mz_core.
 
 ## Table of Contents
 
@@ -609,7 +609,7 @@ If your issue isn't covered here:
 2. **Search GitHub issues**: Similar issues may have solutions
 3. **Create a minimal reproduction**: Isolate the problem
 4. **File an issue**: Include:
-   - mz_utils version
+   - mz_core version
    - Flutter/Dart version
    - Minimal reproduction code
    - Expected vs actual behavior

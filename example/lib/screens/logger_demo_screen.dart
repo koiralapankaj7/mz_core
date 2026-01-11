@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:mz_utils/mz_utils.dart';
+import 'package:mz_core/mz_core.dart';
 
 class LoggerDemoScreen extends StatefulWidget {
   const LoggerDemoScreen({super.key});

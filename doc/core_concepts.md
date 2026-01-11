@@ -1,6 +1,6 @@
 # Core Concepts
 
-This guide explains the key architectural patterns and concepts used in mz_utils.
+This guide explains the key architectural patterns and concepts used in mz_core.
 
 ## Table of Contents
 
@@ -125,7 +125,7 @@ ElevatedButton(
 
 ### Listener Types
 
-mz_utils supports four listener signatures:
+mz_core supports four listener signatures:
 
 #### 1. VoidCallback - No Parameters
 
@@ -728,7 +728,7 @@ final results = await Future.wait([
 
 ## Design Principles
 
-mz_utils follows these principles:
+mz_core follows these principles:
 
 ### 1. Zero Dependencies
 

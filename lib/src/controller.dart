@@ -370,7 +370,7 @@ class _SortedListMerger {
   }
 }
 
-/// {@template mz_utils.Controller}
+/// {@template mz_core.Controller}
 /// High-performance state management controller with advanced features.
 ///
 /// [Controller] provides key-based notifications, priority listeners,
@@ -677,7 +677,7 @@ mixin class Controller implements ChangeNotifier {
   static void maybeDispatchObjectCreation(Controller object) {
     if (kFlutterMemoryAllocationsEnabled && !object._creationDispatched) {
       FlutterMemoryAllocations.instance.dispatchObjectCreated(
-        library: 'package:mz_utils/controller.dart',
+        library: 'package:mz_core/controller.dart',
         className: '$Controller',
         object: object,
       );
@@ -942,7 +942,7 @@ mixin class Controller implements ChangeNotifier {
   }
 }
 
-/// {@template mz_utils.ValueController}
+/// {@template mz_core.ValueController}
 /// A controller that holds a single value and implements [ValueListenable].
 ///
 /// [ValueController] combines the features of [Controller] with Flutter's

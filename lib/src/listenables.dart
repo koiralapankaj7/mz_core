@@ -6,9 +6,11 @@ library;
 
 import 'dart:math';
 
-import 'package:mz_utils/src/controller.dart';
+//
+// ignore: always_use_package_imports
+import 'controller.dart';
 
-/// {@template mz_utils.ListenableList}
+/// {@template mz_core.ListenableList}
 /// A list implementation that notifies listeners whenever it is modified.
 ///
 /// [ListenableList] is a fully functional `List<E>` that automatically notifies
@@ -527,7 +529,7 @@ class ListenableList<E> with Controller implements List<E> {
   }
 }
 
-/// {@template mz_utils.ListenableSet}
+/// {@template mz_core.ListenableSet}
 /// A set implementation that notifies listeners whenever it is modified.
 ///
 /// [ListenableSet] is a fully functional `Set<E>` that automatically notifies
@@ -1104,7 +1106,7 @@ class ListenableMap<K, V> with Controller implements Map<K, V> {
   }
 }
 
-/// {@template mz_utils.ListenableNum}
+/// {@template mz_core.ListenableNum}
 /// A numeric value wrapper that notifies listeners whenever it is modified.
 ///
 /// [ListenableNum] wraps a numeric value ([num], [int], or [double]) and

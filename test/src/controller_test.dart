@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/controller.dart';
+import 'package:mz_core/src/controller.dart';
 
 // Expose internal classes for testing
-export 'package:mz_utils/src/controller.dart' show CListener;
+export 'package:mz_core/src/controller.dart' show CListener;
 
 // Test helper classes
 class TestController with Controller {

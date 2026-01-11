@@ -23,11 +23,11 @@ jobs:
           echo "pubspec=$PUBSPEC_VERSION" >> $GITHUB_OUTPUT
 
           # Extract version from README.md
-          README_VERSION=$(grep 'mz_utils: \^' README.md | sed 's/.*mz_utils: \^//' | head -1 | tr -d ' ')
+          README_VERSION=$(grep 'mz_core: \^' README.md | sed 's/.*mz_core: \^//' | head -1 | tr -d ' ')
           echo "readme=$README_VERSION" >> $GITHUB_OUTPUT
 
           # Extract version from doc/getting_started.md
-          DOCS_VERSION=$(grep 'mz_utils: \^' doc/getting_started.md | sed 's/.*mz_utils: \^//' | head -1 | tr -d ' ')
+          DOCS_VERSION=$(grep 'mz_core: \^' doc/getting_started.md | sed 's/.*mz_core: \^//' | head -1 | tr -d ' ')
           echo "docs=$DOCS_VERSION" >> $GITHUB_OUTPUT
 
           # Print for debugging

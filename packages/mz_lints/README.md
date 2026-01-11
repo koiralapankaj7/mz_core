@@ -1,8 +1,8 @@
 # mz_lints
 
 [![pub package](https://img.shields.io/pub/v/mz_lints.svg)](https://pub.dev/packages/mz_lints)
-[![CI](https://github.com/koiralapankaj7/mz_utils/actions/workflows/mz_lints_ci.yml/badge.svg)](https://github.com/koiralapankaj7/mz_utils/actions/workflows/mz_lints_ci.yml)
-[![codecov](https://codecov.io/gh/koiralapankaj7/mz_utils/branch/main/graph/badge.svg?flag=mz_lints)](https://codecov.io/gh/koiralapankaj7/mz_utils)
+[![CI](https://github.com/koiralapankaj7/mz_core/actions/workflows/mz_lints_ci.yml/badge.svg)](https://github.com/koiralapankaj7/mz_core/actions/workflows/mz_lints_ci.yml)
+[![codecov](https://codecov.io/gh/koiralapankaj7/mz_core/branch/main/graph/badge.svg?flag=mz_lints)](https://codecov.io/gh/koiralapankaj7/mz_core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Custom Dart lint rules for Flutter applications. Helps catch common mistakes with ChangeNotifier disposal, listener cleanup, and Controller lookup patterns.

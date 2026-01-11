@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart' show Widget;
 
-/// {@template mz_utils.IterableMZX}
+/// {@template mz_core.IterableMZX}
 /// Extension methods for [Iterable] providing additional utility operations.
 ///
 /// [IterableMZX] adds convenient methods to the standard [Iterable] interface
@@ -130,7 +130,7 @@ extension IterableMZX<T> on Iterable<T> {
   }
 }
 
-/// {@template mz_utils.ListMZX}
+/// {@template mz_core.ListMZX}
 /// Extension methods for [List] providing additional modification operations.
 ///
 /// [ListMZX] adds convenient removal methods to the standard [List] interface
@@ -283,7 +283,7 @@ extension ListMZX<T> on List<T> {
   }
 }
 
-/// {@template mz_utils.SetMZX}
+/// {@template mz_core.SetMZX}
 /// Extension methods for [Set] providing additional operations.
 ///
 /// [SetMZX] adds convenient methods to the standard [Set] interface for
@@ -419,7 +419,7 @@ extension WidgetMZX on Iterable<Widget> {
   }
 }
 
-/// {@template mz_utils.StringMZX}
+/// {@template mz_core.StringMZX}
 /// Extension methods for [String] providing text transformation utilities.
 ///
 /// [StringMZX] adds convenient case conversion methods to the standard [String]

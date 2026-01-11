@@ -6,7 +6,9 @@ library;
 
 import 'dart:async' show scheduleMicrotask;
 import 'package:flutter/widgets.dart';
-import 'package:mz_utils/src/controller.dart';
+//
+// ignore: always_use_package_imports
+import 'controller.dart';
 
 /// Internal watcher that uses [WeakReference] to hold the [Element].
 ///
@@ -182,7 +184,7 @@ class _WatcherRegistry {
   }
 }
 
-/// {@template mz_utils.ControllerMZX}
+/// {@template mz_core.ControllerMZX}
 /// Extension on [Controller] to enable watch() without wrapper widgets.
 ///
 /// [ControllerMZX] provides a clean syntax for watching

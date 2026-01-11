@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/memoizer.dart';
+import 'package:mz_core/src/memoizer.dart';
 
 void main() {
   group('Memoizer Tests |', () {

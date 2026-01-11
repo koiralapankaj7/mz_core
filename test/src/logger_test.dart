@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mz_utils/src/logger.dart';
+import 'package:mz_core/src/logger.dart';
 
 void main() {
   group('LogLevel Tests |', () {

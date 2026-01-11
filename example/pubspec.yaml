@@ -1,5 +1,5 @@
-name: mz_utils_example
-description: Comprehensive example app demonstrating all mz_utils features
+name: mz_core_example
+description: Comprehensive example app demonstrating all mz_core features
 publish_to: "none"
 version: 1.1.0
 
@@ -9,7 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  mz_utils:
+  mz_core:
     path: ../
 
 dev_dependencies:

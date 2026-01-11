@@ -10,7 +10,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-/// {@template mz_utils.AutoDisposeMixin}
+/// {@template mz_core.AutoDisposeMixin}
 /// Automatic resource cleanup for StatefulWidget State classes.
 ///
 /// [AutoDisposeMixin] integrates [DisposerMixin]'s automatic cleanup
@@ -266,7 +266,7 @@ mixin AutoDisposeMixin<T extends StatefulWidget> on State<T>
   }
 }
 
-/// {@template mz_utils.DisposerMixin}
+/// {@template mz_core.DisposerMixin}
 /// Provides automatic resource cleanup for listeners, streams, and focus nodes.
 ///
 /// [DisposerMixin] solves a common Flutter problem: forgetting to clean up
@@ -539,7 +539,7 @@ mixin DisposerMixin {
   }
 }
 
-/// {@template mz_utils.DisposableController}
+/// {@template mz_core.DisposableController}
 /// Base class for controllers that need lifecycle management.
 ///
 /// Provides a [dispose] method that should be called when the controller
@@ -604,7 +604,7 @@ abstract class DisposableController {
   void dispose() {}
 }
 
-/// {@template mz_utils.AutoDisposeControllerMixin}
+/// {@template mz_core.AutoDisposeControllerMixin}
 /// Automatic resource cleanup for DisposableController classes.
 ///
 /// [AutoDisposeControllerMixin] integrates [DisposerMixin]'s automatic cleanup
