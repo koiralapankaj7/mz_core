@@ -4690,21 +4690,21 @@ void main() {
     });
   });
 
-  // ============== BatchEvent Mode Validation Tests ==============
-  group('BatchEvent mode validation |', () {
-    test('throws UnsupportedError for RateLimited mode', () {
-      final manager = EventManager<String>();
+  // ============== BatchEvent concurrent parameter Tests ==============
+  group('BatchEvent concurrent parameter |', () {
+    test('concurrent defaults to false (sequential)', () {
       final batchEvent = BatchEvent<String, TestEvent<String>>(
         [TestEvent<String>(onExecute: () => 'test')],
-        mode: const RateLimited(limit: 5, window: Duration(seconds: 1)),
       );
+      expect(batchEvent.concurrent, isFalse);
+    });
 
-      expect(
-        () => batchEvent.buildAction(manager),
-        throwsUnsupportedError,
+    test('concurrent can be set to true', () {
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [TestEvent<String>(onExecute: () => 'test')],
+        concurrent: true,
       );
-
-      manager.dispose();
+      expect(batchEvent.concurrent, isTrue);
     });
   });
 
@@ -4741,7 +4741,7 @@ void main() {
             },
           ),
         ],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       manager.addEventToQueue(
@@ -4791,7 +4791,7 @@ void main() {
             onExecute: () => 'result2',
           ),
         ],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       manager.addEventToQueue(
@@ -4835,7 +4835,7 @@ void main() {
           ),
         ],
         eagerError: false,
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       manager.addEventToQueue(
@@ -4874,7 +4874,7 @@ void main() {
 
       final batchEvent = BatchEvent<String, TestEvent<String>>(
         [failingEvent],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       await manager.addEventToQueue(batchEvent);
@@ -4899,7 +4899,7 @@ void main() {
       final manager = EventManager<String>();
       final batchEvent = BatchEvent<String, TestEvent<String>>(
         const [],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       expect(batchEvent.isEnabled(manager), isFalse);
@@ -4914,7 +4914,7 @@ void main() {
           TestEvent<String>(enabled: false, onExecute: () => 'disabled'),
           TestEvent<String>(onExecute: () => 'enabled'),
         ],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       expect(batchEvent.isEnabled(manager), isTrue);
@@ -4933,7 +4933,7 @@ void main() {
             onExecute: () => 'single',
           ),
         ],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       manager.addEventToQueue(
@@ -4958,7 +4958,7 @@ void main() {
           TestEvent<String>(onExecute: () => 'sync2'),
           TestEvent<String>(onExecute: () => 'sync3'),
         ],
-        mode: const Concurrent(),
+        concurrent: true,
       );
 
       manager.addEventToQueue(

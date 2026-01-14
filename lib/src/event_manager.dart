@@ -63,6 +63,10 @@
 /// │  ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐  │
 /// │  │                                        EVENT PROCESSOR                                                   │  │
 /// │  │                                                                                                          │  │
+/// │  │   ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐    │  │
+/// │  │   │  ExecutionMode: Sequential | Concurrent(maxConcurrency) | RateLimited(limit, window)            │    │  │
+/// │  │   └─────────────────────────────────────────────────────────────────────────────────────────────────┘    │  │
+/// │  │                                                                                                          │  │
 /// │  │   ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐         │  │
 /// │  │   │  Check Token    │ ───► │  Execute with   │ ───► │    Report       │ ───► │ Handle Result   │         │  │
 /// │  │   │  Pause/Cancel   │      │    Timeout      │      │   Progress      │      │ Success/Error   │         │  │
@@ -309,6 +313,29 @@
 ///      └─────────────────────────────────────────────────────────────────────────────┘
 /// ```
 ///
+/// ## Execution Modes
+///
+/// ```text
+///      ┌─────────────────────────────────────────────────────────────────────────────┐
+///      │                            ExecutionMode                                    │
+///      │                                                                             │
+///      │   ┌─────────────────┐                                                       │
+///      │   │   Sequential    │ ──►  Process one event at a time (default)            │
+///      │   │                 │      Best for: ordered operations, state mutations    │
+///      │   └─────────────────┘                                                       │
+///      │                                                                             │
+///      │   ┌─────────────────┐                                                       │
+///      │   │   Concurrent    │ ──►  Process multiple events simultaneously           │
+///      │   │ (maxConcurrency)│      Best for: independent API calls, I/O operations  │
+///      │   └─────────────────┘                                                       │
+///      │                                                                             │
+///      │   ┌─────────────────┐                                                       │
+///      │   │  RateLimited    │ ──►  Process up to N events per time window           │
+///      │   │ (limit, window) │      Best for: API rate limits, throttling            │
+///      │   └─────────────────┘                                                       │
+///      └─────────────────────────────────────────────────────────────────────────────┘
+/// ```
+///
 /// ## Undo/Redo System
 ///
 /// ```text
@@ -444,6 +471,7 @@
 /// │      Feature       │ EventManager │ BLoC │ queue pkg │ undo pkg │
 /// ├────────────────────┼──────────────┼──────┼───────────┼──────────┤
 /// │ Priority Queue     │      ●       │  ○   │     ○     │    ○     │
+/// │ Execution Modes    │      ●       │  ○   │     ○     │    ○     │
 /// │ Timeout Support    │      ●       │  ○   │     ○     │    ○     │
 /// │ Auto Retry         │      ●       │  ○   │     ○     │    ○     │
 /// │ Progress Reporting │      ●       │  ○   │     ○     │    ○     │
@@ -1478,31 +1506,16 @@ abstract class BaseEvent<T> extends Intent with PropertyStore {
 // ======================= Execution Mode ==========================
 
 /// {@template mz_core.ExecutionMode}
-/// Defines how multiple events should be executed.
-///
-/// Used by [BatchEvent] and [EventManager] to control execution strategy.
+/// Defines how [EventManager] processes events from its queue.
 ///
 /// ## Available Modes
 ///
-/// - [Sequential]: Execute events one at a time (default)
-/// - [Concurrent]: Execute events simultaneously
+/// * [Sequential] - Process events one at a time, in order (default).
+/// * [Concurrent] - Process multiple events simultaneously.
+/// * [RateLimited] - Limit event processing to a maximum rate.
 ///
-/// ## Usage with BatchEvent
+/// ## Example
 ///
-/// {@tool snippet}
-/// ```dart
-/// // Sequential execution (default)
-/// BatchEvent(events);
-/// BatchEvent(events, mode: const Sequential());
-///
-/// // Concurrent execution
-/// BatchEvent(events, mode: const Concurrent());
-/// ```
-/// {@end-tool}
-///
-/// ## Usage with EventManager
-///
-/// {@tool snippet}
 /// ```dart
 /// // Sequential queue processing (default)
 /// EventManager(mode: const Sequential());
@@ -1510,17 +1523,25 @@ abstract class BaseEvent<T> extends Intent with PropertyStore {
 /// // Process up to 5 events concurrently
 /// EventManager(mode: const Concurrent(maxConcurrency: 5));
 ///
-/// // Unlimited concurrency
-/// EventManager(mode: const Concurrent());
+/// // Rate limit to 60 events per minute
+/// EventManager(mode: const RateLimited(limit: 60, window: Duration(minutes: 1)));
 /// ```
-/// {@end-tool}
+///
+/// See also:
+///
+/// * [EventManager.mode] - The mode property on EventManager.
 /// {@endtemplate}
 sealed class ExecutionMode {
   /// Creates an execution mode.
   const ExecutionMode();
 
+  /// Creates a [Sequential] execution mode.
   const factory ExecutionMode.sequential() = Sequential;
+
+  /// Creates a [Concurrent] execution mode.
   const factory ExecutionMode.concurrent({int? maxConcurrency}) = Concurrent;
+
+  /// Creates a [RateLimited] execution mode.
   const factory ExecutionMode.rateLimited({
     required int limit,
     required Duration window,
@@ -1528,10 +1549,18 @@ sealed class ExecutionMode {
 }
 
 /// {@template mz_core.Sequential}
-/// Execute events one at a time, in order.
+/// Processes events one at a time, in order.
 ///
-/// This is the default mode that preserves execution order and supports
-/// synchronous event optimization.
+/// This is the default [ExecutionMode] for [EventManager]. Events are
+/// processed sequentially, preserving execution order.
+///
+/// ## Example
+///
+/// ```dart
+/// final manager = EventManager<AppState>(
+///   mode: const Sequential(), // This is the default
+/// );
+/// ```
 /// {@endtemplate}
 class Sequential extends ExecutionMode {
   /// Creates a sequential execution mode.
@@ -1539,66 +1568,62 @@ class Sequential extends ExecutionMode {
 }
 
 /// {@template mz_core.Concurrent}
-/// Execute events simultaneously.
+/// Processes multiple events simultaneously.
 ///
-/// For [BatchEvent], all events start at once using [Future.wait].
+/// Controls how many events [EventManager] can process at the same time
+/// from its queue.
 ///
-/// For [EventManager], controls how many events can be processed
-/// simultaneously from the queue.
+/// ## Example
 ///
-/// ## Parameters
+/// ```dart
+/// // Process up to 5 events concurrently
+/// final manager = EventManager<AppState>(
+///   mode: const Concurrent(maxConcurrency: 5),
+/// );
 ///
-/// - [maxConcurrency]: Maximum number of concurrent executions.
-///   - `null` (default): Unlimited concurrency
-///   - `n > 0`: Up to n events run simultaneously
+/// // Unlimited concurrency
+/// final manager = EventManager<AppState>(
+///   mode: const Concurrent(),
+/// );
+/// ```
 /// {@endtemplate}
 class Concurrent extends ExecutionMode {
   /// Creates a concurrent execution mode.
   ///
-  /// [maxConcurrency] limits simultaneous executions. If null, unlimited.
+  /// If [maxConcurrency] is null (default), unlimited events can run
+  /// simultaneously. Otherwise, at most [maxConcurrency] events run at once.
   const Concurrent({this.maxConcurrency});
 
-  /// Maximum number of concurrent executions.
-  ///
-  /// - `null`: Unlimited concurrency
-  /// - `n > 0`: Up to n events run simultaneously
+  /// Maximum number of concurrent executions, or null for unlimited.
   final int? maxConcurrency;
 }
 
 /// {@template mz_core.RateLimited}
-/// Execute up to a maximum number of events per time window.
+/// Processes up to [limit] events per [window] duration.
 ///
 /// Events beyond the limit are queued and processed when the window resets.
-/// No events are dropped - they're delayed until allowed.
+/// No events are dropped—they're delayed until allowed.
 ///
-/// **Use cases:**
-/// - API rate limits (e.g., 100 requests/minute)
-/// - Payment gateway restrictions
-/// - Email/SMS sending limits
-/// - Database write batching
-/// - Throttling (use `limit: 1` for one event per interval)
+/// Use cases:
 ///
-/// **Note:** Only applicable to [EventManager], not [BatchEvent].
+/// * API rate limits (e.g., 100 requests/minute)
+/// * Payment gateway restrictions
+/// * Email/SMS sending limits
+/// * Database write batching
+/// * Throttling (use `limit: 1` for one event per interval)
 ///
 /// ## Example
 ///
-/// {@tool snippet}
-/// Rate limit API calls to 60 per minute:
-///
 /// ```dart
+/// // Rate limit API calls to 60 per minute
 /// final manager = EventManager<AppState>(
 ///   mode: const RateLimited(
 ///     limit: 60,
 ///     window: Duration(minutes: 1),
 ///   ),
 /// );
-/// ```
-/// {@end-tool}
 ///
-/// {@tool snippet}
-/// Throttle to one event per 100ms (use `limit: 1`):
-///
-/// ```dart
+/// // Throttle to one event per 100ms
 /// final manager = EventManager<AppState>(
 ///   mode: const RateLimited(
 ///     limit: 1,
@@ -1606,13 +1631,12 @@ class Concurrent extends ExecutionMode {
 ///   ),
 /// );
 /// ```
-/// {@end-tool}
 /// {@endtemplate}
 class RateLimited extends ExecutionMode {
   /// Creates a rate-limited execution mode.
   ///
-  /// [limit] is the maximum events allowed per [window].
-  /// Use `limit: 1` for throttle-like behavior (one event per interval).
+  /// At most [limit] events are processed per [window] duration.
+  /// Use `limit: 1` for throttle-like behavior.
   const RateLimited({required this.limit, required this.window});
 
   /// Maximum number of events allowed per window.
@@ -1694,12 +1718,12 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
   /// [events] is the collection of events to process.
   /// [eagerError] determines if the batch should fail on first error or
   /// collect all errors.
-  /// [mode] controls execution strategy - [Sequential] (default) or
-  /// [Concurrent].
+  /// [concurrent] if true, all events start simultaneously; if false (default),
+  /// events run one at a time.
   BatchEvent(
     this.events, {
     this.eagerError = true,
-    this.mode = const Sequential(),
+    this.concurrent = false,
   });
 
   /// The collection of events to process in this batch.
@@ -1711,11 +1735,11 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
   /// If false, all events will be processed and errors collected.
   final bool eagerError;
 
-  /// The execution mode for this batch.
+  /// Whether to execute events concurrently.
   ///
-  /// - [Sequential]: Events run one at a time (default)
-  /// - [Concurrent]: All events start simultaneously
-  final ExecutionMode mode;
+  /// If true, all events start simultaneously using [Future.wait].
+  /// If false (default), events run one at a time in order.
+  final bool concurrent;
 
   @override
   bool isEnabled(EventManager<T> manager) =>
@@ -1723,14 +1747,9 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
 
   @override
   FutureOr<List<Object?>> buildAction(EventManager<T> manager) {
-    return switch (mode) {
-      Sequential() => _buildSequentialAction(manager),
-      Concurrent() => _buildConcurrentAction(manager),
-      RateLimited() => throw UnsupportedError(
-          'RateLimited is not supported for BatchEvent. '
-          'Use Sequential or Concurrent instead.',
-        ),
-    };
+    return concurrent
+        ? _buildConcurrentAction(manager)
+        : _buildSequentialAction(manager);
   }
 
   Future<List<Object?>> _buildSequentialAction(EventManager<T> manager) async {
@@ -1790,7 +1809,7 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
         onRetry: () => manager.addEventToQueue(
           BatchEvent<T, E>(
             pendingEvents.map((e) => e.event),
-            mode: const Concurrent(),
+            concurrent: true,
           ),
         ),
       );
@@ -2837,7 +2856,9 @@ class EventManager<T> extends Controller with Diagnosticable {
     // Restart processing if we're idle and have events
     // This handles the case where token.resume() is called
     if (!_isProcessing && hasEvents && !_isPaused) {
-      unawaited(_processQueue());
+      // FutureOr cannot be awaited
+      // ignore: discarded_futures
+      _processQueue();
     }
   }
 
@@ -2845,7 +2866,9 @@ class EventManager<T> extends Controller with Diagnosticable {
   void _onEventResumed() {
     // Restart processing if we're idle and have events
     if (!_isProcessing && hasEvents && !_isPaused) {
-      unawaited(_processQueue());
+      // FutureOr cannot be awaited
+      // ignore: discarded_futures
+      _processQueue();
     }
   }
 
@@ -2901,7 +2924,9 @@ class EventManager<T> extends Controller with Diagnosticable {
     }
     if (isInitialized) {
       if (!_isProcessing) {
-        unawaited(_processQueue());
+        // FutureOr cannot be awaited
+        // ignore: discarded_futures
+        _processQueue();
       } else if (_canStartMore) {
         // Already processing, but have capacity for more concurrent events
         scheduleMicrotask(_processQueue);
@@ -2998,11 +3023,11 @@ class EventManager<T> extends Controller with Diagnosticable {
   /// Stopwatch for time-based batching (reused to avoid allocations)
   final _batchStopwatch = Stopwatch();
 
-  Future<void> _processQueue() {
+  FutureOr<void> _processQueue() {
     if (_queue.isEmpty || _isPaused) {
       // Only mark as not processing if no active events
       if (_activeCount == 0) _isProcessing = false;
-      return Future.value();
+      return null;
     }
     _isProcessing = true;
 
@@ -3063,7 +3088,7 @@ class EventManager<T> extends Controller with Diagnosticable {
     }
     // else: active events running, they'll trigger next batch on complete
 
-    return Future.value();
+    return null;
   }
 
   /// Called when an async event completes to potentially start more events.
@@ -3160,9 +3185,12 @@ class EventManager<T> extends Controller with Diagnosticable {
     );
     if (!_isPaused || !hasEvents) return;
     _isPaused = false;
+
     // Process immediately - _processQueue internally respects mode constraints
     // and schedules appropriately if events can't start yet
-    unawaited(_processQueue());
+    // FutureOr cannot be awaited
+    // ignore: discarded_futures
+    _processQueue();
   }
 
   /// Clears all pending events from the queue.
