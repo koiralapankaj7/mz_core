@@ -35,6 +35,7 @@
 /// | **Backpressure**     | Configurable queue limits and overflow policies    |
 /// | **Performance**      | Time-based batching for UI responsiveness          |
 /// | **Logging**          | Integrated [EventLogger] with colored output       |
+/// | **Execution Modes**  | Sequential, concurrent, or rate-limited processing |
 ///
 /// ## System Architecture
 ///
@@ -469,6 +470,7 @@
 /// - [RetryBackoff] - Backoff strategies for retries
 /// - [OverflowPolicy] - Backpressure handling options
 /// - [EventState] - Event lifecycle states
+/// - [ExecutionMode] - Execution strategies (Sequential, Concurrent, RateLimited)
 /// {@endtemplate}
 library;
 
@@ -501,6 +503,15 @@ typedef RetryCallback = FutureOr<Object?> Function();
 
 /// Type representing a failed event and its error.
 typedef PendingEvent<T, E extends BaseEvent<T>> = ({E event, BaseError? error});
+
+/// Record type for token cancellation data.
+typedef TokenCancellation = ({Object? reason, bool retriable});
+
+/// Callback for event state changes.
+///
+/// Listeners receive the new [EventState] and can use pattern matching
+/// to filter which states they care about.
+typedef StateListener = void Function(EventState? state);
 
 typedef _EventQueue<T> = Queue<_QueuedEvent<T, BaseEvent<T>>>;
 
@@ -607,9 +618,6 @@ class QueueOverflowError extends Error {
 }
 
 // ======================= Base Events ==========================
-
-/// Record type for token cancellation data.
-typedef TokenCancellation = ({Object? reason, bool retriable});
 
 /// {@template mz_core.EventToken}
 /// Token used to group and collectively control related events.
@@ -1171,8 +1179,8 @@ abstract class BaseEvent<T> extends Intent with PropertyStore {
   final EventToken? _token;
 
   /// The state controller for tracking event lifecycle.
-  late final EventStateController _stateController =
-      EventStateController(debugKey: debugKey);
+  late final EventController _stateController =
+      EventController(debugKey: debugKey);
 
   /// Builds an error object when the event fails.
   ///
@@ -1464,7 +1472,154 @@ abstract class BaseEvent<T> extends Intent with PropertyStore {
 
   /// The state controller for testing purposes.
   @visibleForTesting
-  EventStateController get stateController => _stateController;
+  EventController get stateController => _stateController;
+}
+
+// ======================= Execution Mode ==========================
+
+/// {@template mz_core.ExecutionMode}
+/// Defines how multiple events should be executed.
+///
+/// Used by [BatchEvent] and [EventManager] to control execution strategy.
+///
+/// ## Available Modes
+///
+/// - [Sequential]: Execute events one at a time (default)
+/// - [Concurrent]: Execute events simultaneously
+///
+/// ## Usage with BatchEvent
+///
+/// {@tool snippet}
+/// ```dart
+/// // Sequential execution (default)
+/// BatchEvent(events);
+/// BatchEvent(events, mode: const Sequential());
+///
+/// // Concurrent execution
+/// BatchEvent(events, mode: const Concurrent());
+/// ```
+/// {@end-tool}
+///
+/// ## Usage with EventManager
+///
+/// {@tool snippet}
+/// ```dart
+/// // Sequential queue processing (default)
+/// EventManager(mode: const Sequential());
+///
+/// // Process up to 5 events concurrently
+/// EventManager(mode: const Concurrent(maxConcurrency: 5));
+///
+/// // Unlimited concurrency
+/// EventManager(mode: const Concurrent());
+/// ```
+/// {@end-tool}
+/// {@endtemplate}
+sealed class ExecutionMode {
+  /// Creates an execution mode.
+  const ExecutionMode();
+
+  const factory ExecutionMode.sequential() = Sequential;
+  const factory ExecutionMode.concurrent({int? maxConcurrency}) = Concurrent;
+  const factory ExecutionMode.rateLimited({
+    required int limit,
+    required Duration window,
+  }) = RateLimited;
+}
+
+/// {@template mz_core.Sequential}
+/// Execute events one at a time, in order.
+///
+/// This is the default mode that preserves execution order and supports
+/// synchronous event optimization.
+/// {@endtemplate}
+class Sequential extends ExecutionMode {
+  /// Creates a sequential execution mode.
+  const Sequential();
+}
+
+/// {@template mz_core.Concurrent}
+/// Execute events simultaneously.
+///
+/// For [BatchEvent], all events start at once using [Future.wait].
+///
+/// For [EventManager], controls how many events can be processed
+/// simultaneously from the queue.
+///
+/// ## Parameters
+///
+/// - [maxConcurrency]: Maximum number of concurrent executions.
+///   - `null` (default): Unlimited concurrency
+///   - `n > 0`: Up to n events run simultaneously
+/// {@endtemplate}
+class Concurrent extends ExecutionMode {
+  /// Creates a concurrent execution mode.
+  ///
+  /// [maxConcurrency] limits simultaneous executions. If null, unlimited.
+  const Concurrent({this.maxConcurrency});
+
+  /// Maximum number of concurrent executions.
+  ///
+  /// - `null`: Unlimited concurrency
+  /// - `n > 0`: Up to n events run simultaneously
+  final int? maxConcurrency;
+}
+
+/// {@template mz_core.RateLimited}
+/// Execute up to a maximum number of events per time window.
+///
+/// Events beyond the limit are queued and processed when the window resets.
+/// No events are dropped - they're delayed until allowed.
+///
+/// **Use cases:**
+/// - API rate limits (e.g., 100 requests/minute)
+/// - Payment gateway restrictions
+/// - Email/SMS sending limits
+/// - Database write batching
+/// - Throttling (use `limit: 1` for one event per interval)
+///
+/// **Note:** Only applicable to [EventManager], not [BatchEvent].
+///
+/// ## Example
+///
+/// {@tool snippet}
+/// Rate limit API calls to 60 per minute:
+///
+/// ```dart
+/// final manager = EventManager<AppState>(
+///   mode: const RateLimited(
+///     limit: 60,
+///     window: Duration(minutes: 1),
+///   ),
+/// );
+/// ```
+/// {@end-tool}
+///
+/// {@tool snippet}
+/// Throttle to one event per 100ms (use `limit: 1`):
+///
+/// ```dart
+/// final manager = EventManager<AppState>(
+///   mode: const RateLimited(
+///     limit: 1,
+///     window: Duration(milliseconds: 100),
+///   ),
+/// );
+/// ```
+/// {@end-tool}
+/// {@endtemplate}
+class RateLimited extends ExecutionMode {
+  /// Creates a rate-limited execution mode.
+  ///
+  /// [limit] is the maximum events allowed per [window].
+  /// Use `limit: 1` for throttle-like behavior (one event per interval).
+  const RateLimited({required this.limit, required this.window});
+
+  /// Maximum number of events allowed per window.
+  final int limit;
+
+  /// Time window for rate limiting.
+  final Duration window;
 }
 
 /// {@template mz_core.BatchEvent}
@@ -1539,9 +1694,12 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
   /// [events] is the collection of events to process.
   /// [eagerError] determines if the batch should fail on first error or
   /// collect all errors.
+  /// [mode] controls execution strategy - [Sequential] (default) or
+  /// [Concurrent].
   BatchEvent(
     this.events, {
     this.eagerError = true,
+    this.mode = const Sequential(),
   });
 
   /// The collection of events to process in this batch.
@@ -1553,12 +1711,29 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
   /// If false, all events will be processed and errors collected.
   final bool eagerError;
 
+  /// The execution mode for this batch.
+  ///
+  /// - [Sequential]: Events run one at a time (default)
+  /// - [Concurrent]: All events start simultaneously
+  final ExecutionMode mode;
+
   @override
   bool isEnabled(EventManager<T> manager) =>
       events.isNotEmpty && events.any((e) => e.isEnabled(manager));
 
   @override
-  Future<List<Object?>> buildAction(EventManager<T> manager) async {
+  FutureOr<List<Object?>> buildAction(EventManager<T> manager) {
+    return switch (mode) {
+      Sequential() => _buildSequentialAction(manager),
+      Concurrent() => _buildConcurrentAction(manager),
+      RateLimited() => throw UnsupportedError(
+          'RateLimited is not supported for BatchEvent. '
+          'Use Sequential or Concurrent instead.',
+        ),
+    };
+  }
+
+  Future<List<Object?>> _buildSequentialAction(EventManager<T> manager) async {
     final pendingEvents = <PendingEvent<T, E>>[];
     final queue = ListQueue<E>.from(events);
     final results = <Object?>[];
@@ -1583,6 +1758,43 @@ class BatchEvent<T, E extends BaseEvent<T>> extends BaseEvent<T> {
     }
 
     return results;
+  }
+
+  Future<List<Object?>> _buildConcurrentAction(EventManager<T> manager) async {
+    final eventList = events.toList();
+    final pendingEvents = <PendingEvent<T, E>>[];
+
+    // Start all events concurrently
+    final futures = eventList.map((event) async {
+      try {
+        return await event.buildAction(manager);
+      } on Object catch (error, stackTrace) {
+        final baseError = event.buildError(error, stackTrace, manager);
+        pendingEvents.add((event: event, error: baseError));
+        rethrow;
+      }
+    }).toList();
+
+    try {
+      return await Future.wait(futures, eagerError: eagerError);
+    } on Object {
+      throw BatchError<T, E>(
+        // coverage:ignore-start
+        // When Future.wait throws, at least one future threw, which means
+        // our catch block already added to pendingEvents. This branch is
+        // defensive code that cannot be reached in practice.
+        pendingEvents: pendingEvents.isEmpty
+            ? eventList.map((e) => (event: e, error: null))
+            : pendingEvents,
+        // coverage:ignore-end
+        onRetry: () => manager.addEventToQueue(
+          BatchEvent<T, E>(
+            pendingEvents.map((e) => e.event),
+            mode: const Concurrent(),
+          ),
+        ),
+      );
+    }
   }
 
   FutureOr<void> _processEvents(
@@ -1849,13 +2061,7 @@ abstract class UndoableEvent<T> extends BaseEvent<T> {
   UndoableEvent<T>? mergeWith(UndoableEvent<T> other) => null;
 }
 
-/// Callback for event state changes.
-///
-/// Listeners receive the new [EventState] and can use pattern matching
-/// to filter which states they care about.
-typedef StateListener = void Function(EventState? state);
-
-/// {@template mz_core.EventStateController}
+/// {@template mz_core.EventController}
 /// Lightweight event state controller for [BaseEvent] lifecycle management.
 ///
 /// Unlike the general-purpose [Controller], this is purpose-built for
@@ -1871,7 +2077,7 @@ typedef StateListener = void Function(EventState? state);
 /// Listen to event state changes:
 ///
 /// ```dart
-/// final controller = EventStateController();
+/// final controller = EventController();
 ///
 /// controller.addListener((state) {
 ///   switch (state) {
@@ -1903,13 +2109,13 @@ typedef StateListener = void Function(EventState? state);
 ///
 /// See also:
 ///
-/// * [BaseEvent] - Uses EventStateController for lifecycle tracking.
+/// * [BaseEvent] - Uses EventController for lifecycle tracking.
 /// * [EventState] - The state values tracked by this controller.
 /// * [Controller] - General-purpose listener notification.
 /// {@endtemplate}
-class EventStateController {
+class EventController {
   /// Creates a state controller with optional debug key.
-  EventStateController({this.debugKey});
+  EventController({this.debugKey});
 
   /// Debug key for identifying this controller.
   final String? debugKey;
@@ -2428,6 +2634,7 @@ class EventManager<T> extends Controller with Diagnosticable {
   /// - [overflowPolicy] How to handle queue overflow (default dropNewest)
   /// - [frameBudget] Time budget per batch before yielding (default 8ms)
   /// - [undoManager] Optional manager for undo/redo functionality
+  /// - [mode] Execution mode - [Sequential] (default) or [Concurrent]
   EventManager({
     EventLogger<T>? logger,
     String? debugLabel,
@@ -2436,6 +2643,7 @@ class EventManager<T> extends Controller with Diagnosticable {
     this.overflowPolicy = OverflowPolicy.dropNewest,
     this.frameBudget = const Duration(milliseconds: 8),
     this.undoManager,
+    this.mode = const Sequential(),
   })  : logger = logger ?? EventLogger<T>(debugLabel: debugLabel),
         _disposeLogger = logger == null;
 
@@ -2508,6 +2716,34 @@ class EventManager<T> extends Controller with Diagnosticable {
   /// ```
   final UndoRedoManager<T>? undoManager;
 
+  /// The execution mode for queue processing.
+  ///
+  /// Controls how events are processed from the queue:
+  ///
+  /// - [Sequential] (default): Process one event at a time
+  /// - [Concurrent]: Process multiple events simultaneously
+  ///
+  /// For [Concurrent] mode, use [Concurrent.maxConcurrency] to limit
+  /// simultaneous executions.
+  ///
+  /// Priority still determines **start order**, not completion order.
+  /// Higher priority events start first, but multiple events may run
+  /// concurrently.
+  ///
+  /// **Example:**
+  /// ```dart
+  /// // Process up to 5 events concurrently
+  /// final manager = EventManager<AppState>(
+  ///   mode: const Concurrent(maxConcurrency: 5),
+  /// );
+  ///
+  /// // These can all run concurrently (up to the limit)
+  /// manager.addEventToQueue(UpdateCellEvent('A1', value1));
+  /// manager.addEventToQueue(UpdateCellEvent('B2', value2));
+  /// manager.addEventToQueue(UpdateCellEvent('C3', value3));
+  /// ```
+  final ExecutionMode mode;
+
   final bool _disposeLogger;
 
   /// The event logger used to track event processing.
@@ -2516,6 +2752,54 @@ class EventManager<T> extends Controller with Diagnosticable {
   final _queue = _EventQueue<T>();
   bool _isProcessing = false;
   bool _isPaused = false;
+
+  // Stream subscriptions for automatic cleanup on dispose
+  final _streamSubscriptions = <StreamSubscription<BaseEvent<T>>>{};
+
+  // Concurrent execution tracking
+  int _activeCount = 0;
+
+  // Rate-limit timing state
+  DateTime? _windowStartTime;
+  int _executionCountInWindow = 0;
+  Timer? _rateLimitTimer;
+
+  /// Whether more events can be started based on [mode].
+  bool get _canStartMore => switch (mode) {
+        Sequential() => _canStartSequential,
+        Concurrent(:final maxConcurrency) =>
+          _canStartConcurrent(maxConcurrency),
+        RateLimited(:final limit, :final window) =>
+          _canStartRateLimited(limit, window),
+      };
+
+  bool get _canStartSequential => _activeCount < 1;
+
+  bool _canStartConcurrent(int? maxConcurrency) =>
+      maxConcurrency == null || _activeCount < maxConcurrency;
+
+  bool _canStartRateLimited(int limit, Duration window) {
+    _resetWindowIfExpired(window);
+    return _executionCountInWindow < limit;
+  }
+
+  void _resetWindowIfExpired(Duration window) {
+    final now = DateTime.now();
+    if (_windowStartTime == null ||
+        now.difference(_windowStartTime!) >= window) {
+      _windowStartTime = now;
+      _executionCountInWindow = 0;
+    }
+  }
+
+  void _recordExecution() {
+    if (mode is RateLimited) {
+      _executionCountInWindow++;
+    }
+  }
+
+  /// Number of events currently executing.
+  int get activeEventCount => _activeCount;
 
   // Token reference counting for efficient listener management
   final _tokenRefCounts = <EventToken, int>{};
@@ -2605,18 +2889,89 @@ class EventManager<T> extends Controller with Diagnosticable {
     // Register token for state change notifications
     _registerToken(event.token);
 
-    final completer = _QueuedEvent<T, E>(
+    final queuedEvent = _QueuedEvent<T, E>(
       event: event,
       onDone: onDone,
       onError: onError,
     );
-    if (!completer.addTo(_queue, this)) {
+    if (!queuedEvent.addTo(_queue, this)) {
       // Event was not added (cancelled, etc.) - unregister token
       _unregisterToken(event.token);
       return null;
     }
-    if (isInitialized && !_isProcessing) unawaited(_processQueue());
-    return completer.result;
+    if (isInitialized) {
+      if (!_isProcessing) {
+        unawaited(_processQueue());
+      } else if (_canStartMore) {
+        // Already processing, but have capacity for more concurrent events
+        scheduleMicrotask(_processQueue);
+      }
+    }
+    return queuedEvent.result;
+  }
+
+  /// Subscribes to a stream of events, adding each to the queue as it arrives.
+  ///
+  /// Returns the [StreamSubscription] for manual cancellation.
+  /// Subscription is automatically cancelled when the manager is disposed.
+  ///
+  /// ## Basic Usage
+  ///
+  /// {@tool snippet}
+  /// Subscribe to WebSocket events:
+  ///
+  /// ```dart
+  /// final subscription = manager.addEventStream(
+  ///   webSocket.messages.map((msg) => ProcessMessageEvent(msg)),
+  ///   onDone: (event, result) => print('Processed: $result'),
+  ///   onStreamError: (e, s) => print('Stream error: $e'),
+  /// );
+  ///
+  /// // Later: manual cancellation
+  /// subscription.cancel();
+  /// ```
+  /// {@end-tool}
+  ///
+  /// ## Parameters
+  ///
+  /// * [stream] - The stream of events to subscribe to.
+  /// * [onDone] - Optional callback for when each event completes.
+  /// * [onError] - Optional callback for when an event fails.
+  /// * [onStreamError] - Called when the stream itself produces an error.
+  /// * [onStreamDone] - Called when the stream closes.
+  /// * [cancelOnError] - If true, cancels subscription on first stream error.
+  ///
+  /// See also:
+  ///
+  /// * [addEventToQueue] - Add a single event to the queue.
+  StreamSubscription<E> addEventStream<E extends BaseEvent<T>>(
+    Stream<E> stream, {
+    OnDone<T, E>? onDone,
+    OnError<T>? onError,
+    void Function(Object error, StackTrace stackTrace)? onStreamError,
+    void Function()? onStreamDone,
+    bool cancelOnError = false,
+  }) {
+    late StreamSubscription<E> subscription;
+    subscription = stream.listen(
+      (event) {
+        unawaited(
+          Future.value(
+            addEventToQueue(event, onDone: onDone, onError: onError),
+          ),
+        );
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        onStreamError?.call(error, stackTrace);
+      },
+      onDone: () {
+        _streamSubscriptions.remove(subscription);
+        onStreamDone?.call();
+      },
+      cancelOnError: cancelOnError,
+    );
+    _streamSubscriptions.add(subscription);
+    return subscription;
   }
 
   /// Processes an event instantly without entering the queue.
@@ -2632,12 +2987,12 @@ class EventManager<T> extends Controller with Diagnosticable {
     OnError<T>? onError,
   }) {
     if (!event.isEnabled(this)) return null;
-    final completer = _QueuedEvent<T, E>(
+    final queuedEvent = _QueuedEvent<T, E>(
       event: event,
       onDone: onDone,
       onError: onError,
     );
-    return completer.run(this);
+    return queuedEvent.run(this);
   }
 
   /// Stopwatch for time-based batching (reused to avoid allocations)
@@ -2645,7 +3000,8 @@ class EventManager<T> extends Controller with Diagnosticable {
 
   Future<void> _processQueue() {
     if (_queue.isEmpty || _isPaused) {
-      _isProcessing = false;
+      // Only mark as not processing if no active events
+      if (_activeCount == 0) _isProcessing = false;
       return Future.value();
     }
     _isProcessing = true;
@@ -2655,15 +3011,16 @@ class EventManager<T> extends Controller with Diagnosticable {
       ..reset()
       ..start();
 
-    var processed = 0;
+    var started = 0;
     var skippedPaused = 0;
     final queueLength = _queue.length;
 
     while (_queue.isNotEmpty &&
         !_isPaused &&
-        processed < maxBatchSize &&
+        started < maxBatchSize &&
         skippedPaused < queueLength &&
-        _batchStopwatch.elapsed < frameBudget) {
+        _batchStopwatch.elapsed < frameBudget &&
+        _canStartMore) {
       final completer = _queue.first;
 
       // Skip paused events - move to end of queue and continue
@@ -2675,36 +3032,99 @@ class EventManager<T> extends Controller with Diagnosticable {
         continue;
       }
 
-      // Not paused - remove and process
+      // Not paused - remove and start
       _queue.removeFirst();
-      skippedPaused = 0; // Reset counter when we process an event
-      processed++;
+      skippedPaused = 0; // Reset counter when we start an event
+      started++;
+      _activeCount++;
+      _recordExecution();
 
       final result = completer.run(this);
       if (result is Future) {
-        // Handle async event and schedule next batch
-        _batchStopwatch.stop();
-        return result.then((_) => _scheduleNext());
+        // Track async event completion
+        unawaited(result.whenComplete(_onEventComplete));
+      } else {
+        // Sync event completed immediately
+        _activeCount--;
       }
     }
 
     _batchStopwatch.stop();
 
-    // Only schedule next if we actually processed something.
-    // If we only skipped paused events, don't reschedule to avoid infinite
-    // loop. Processing will resume when token.resume() or event.resume()
-    // is called.
-    if (processed > 0) {
-      _scheduleNext();
-    } else {
+    // Track if all remaining events are paused
+    final allPaused = skippedPaused >= queueLength;
+
+    // Schedule next batch based on mode
+    if (started > 0 || (_queue.isNotEmpty && !allPaused)) {
+      _scheduleNextBasedOnMode();
+    } else if (_activeCount == 0) {
+      // No active events and nothing started - stop processing
       _isProcessing = false;
     }
+    // else: active events running, they'll trigger next batch on complete
+
     return Future.value();
   }
 
+  /// Called when an async event completes to potentially start more events.
+  void _onEventComplete() {
+    _activeCount--;
+
+    // Try to start more events if queue has items
+    if (_queue.isNotEmpty && !_isPaused) {
+      // Use mode-aware scheduling to respect throttle/rate-limit timings
+      _scheduleNextBasedOnMode();
+    } else if (_activeCount == 0) {
+      _isProcessing = false;
+    }
+  }
+
+  /// Schedules next batch based on the execution mode.
+  void _scheduleNextBasedOnMode() {
+    if (_queue.isEmpty || _isPaused) {
+      if (_activeCount == 0) _isProcessing = false;
+      return;
+    }
+
+    switch (mode) {
+      case Sequential():
+      case Concurrent():
+        _scheduleNext();
+      case RateLimited(:final limit, :final window):
+        _scheduleRateLimited(limit, window);
+    }
+  }
+
+  void _scheduleRateLimited(int limit, Duration window) {
+    _rateLimitTimer?.cancel();
+
+    if (_canStartMore) {
+      _scheduleNext();
+      return;
+    }
+
+    // Calculate delay until window resets
+    final elapsed = DateTime.now().difference(_windowStartTime!);
+    final remaining = window - elapsed;
+
+    // coverage:ignore-start
+    // Race condition guard: window could expire between _canStartMore check
+    // and DateTime.now() call above. Practically impossible to trigger in tests.
+    if (remaining.isNegative) {
+      _scheduleNext();
+    } else {
+      // coverage:ignore-end
+      // Not actively processing - just waiting for timer
+      if (_activeCount == 0) _isProcessing = false;
+      _rateLimitTimer = Timer(remaining, _processQueue);
+    }
+  }
+
   void _scheduleNext() {
-    _isProcessing = false;
-    if (_queue.isEmpty || _isPaused) return;
+    if (_queue.isEmpty || _isPaused || !_canStartMore) {
+      if (_activeCount == 0) _isProcessing = false;
+      return;
+    }
     assert(
       () {
         debugPrint('EventManager: Scheduling next batch');
@@ -2719,15 +3139,20 @@ class EventManager<T> extends Controller with Diagnosticable {
   ///
   /// Events added while paused will be queued but not processed until
   /// [resumeEvents] is called.
+  ///
+  /// Any pending throttle/rate-limit timers are cancelled while paused.
   void pauseEvents() {
     if (_isPaused) return;
     _isPaused = true;
+    // Cancel any pending throttle/rate-limit timer
+    _rateLimitTimer?.cancel();
+    _rateLimitTimer = null;
   }
 
   /// Resumes processing of queued events.
   ///
   /// If there are events in the queue when resumed, they will be processed
-  /// in the order they were added.
+  /// respecting the current [mode] settings (throttle intervals, rate limits).
   void resumeEvents() {
     assert(
       !_isProcessing,
@@ -2735,6 +3160,8 @@ class EventManager<T> extends Controller with Diagnosticable {
     );
     if (!_isPaused || !hasEvents) return;
     _isPaused = false;
+    // Process immediately - _processQueue internally respects mode constraints
+    // and schedules appropriately if events can't start yet
     unawaited(_processQueue());
   }
 
@@ -2742,7 +3169,13 @@ class EventManager<T> extends Controller with Diagnosticable {
   ///
   /// [reason] Optional reason for clearing events, which will be passed to
   /// cancelled events.
+  ///
+  /// Any pending throttle/rate-limit timers are cancelled.
   void clearEvents([Object? reason]) {
+    // Cancel any pending throttle/rate-limit timer
+    _rateLimitTimer?.cancel();
+    _rateLimitTimer = null;
+
     for (final completer in _queue) {
       completer.cancel(reason ?? 'Event manager cleared', this);
     }
@@ -2773,6 +3206,16 @@ class EventManager<T> extends Controller with Diagnosticable {
   /// created internally.
   @override
   void dispose() {
+    // Cancel throttle/rate-limit timer
+    _rateLimitTimer?.cancel();
+    _rateLimitTimer = null;
+
+    // Cancel all stream subscriptions
+    for (final subscription in _streamSubscriptions) {
+      unawaited(subscription.cancel());
+    }
+    _streamSubscriptions.clear();
+
     clearEvents('Event manager disposed');
     // Remove all token listeners
     for (final token in _tokenRefCounts.keys.toList()) {
@@ -3246,7 +3689,7 @@ class BatchError<T, E extends BaseEvent<T>> extends BaseError {
 /// See also:
 ///
 /// * [BaseEvent] - Events that have state.
-/// * [EventStateController] - Manages event state transitions.
+/// * [EventController] - Manages event state transitions.
 /// {@endtemplate}
 sealed class EventState {
   /// Creates a new event state with the current timestamp (in debug mode).

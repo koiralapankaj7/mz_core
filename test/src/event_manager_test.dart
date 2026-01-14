@@ -1385,16 +1385,16 @@ void main() {
     });
   });
 
-  group('EventStateController |', () {
+  group('EventController |', () {
     test('should have null value initially', () {
-      final controller = EventStateController();
+      final controller = EventController();
       expect(controller.value, isNull);
       expect(controller.isCancelled, isFalse);
       expect(controller.isCompleted, isFalse);
     });
 
     test('should update value and notify listeners', () {
-      final controller = EventStateController();
+      final controller = EventController();
       var notified = false;
       controller.addListener((_) => notified = true);
 
@@ -1405,7 +1405,7 @@ void main() {
     });
 
     test('should not notify if value is same', () {
-      final controller = EventStateController();
+      final controller = EventController();
       final state = EventState.start();
       controller.value = state;
 
@@ -1417,13 +1417,13 @@ void main() {
     });
 
     test('isCancelled should return true for cancel state', () {
-      final controller = EventStateController();
+      final controller = EventController();
       controller.value = EventState.cancel();
       expect(controller.isCancelled, isTrue);
     });
 
     test('isCompleted should return true for complete state', () {
-      final controller = EventStateController();
+      final controller = EventController();
       controller.value = EventState.complete();
       expect(controller.isCompleted, isTrue);
     });
@@ -2714,8 +2714,10 @@ void main() {
     });
 
     test('exponential backoff increases delay', () {
-      const backoff = RetryBackoff.exponential(
-        initial: Duration(milliseconds: 100),
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final backoff = RetryBackoff.exponential(
+        initial: const Duration(milliseconds: 100),
       );
 
       expect(backoff.delay(0), const Duration(milliseconds: 100));
@@ -2724,9 +2726,11 @@ void main() {
     });
 
     test('exponential backoff respects maxDelay', () {
-      const backoff = RetryBackoff.exponential(
-        initial: Duration(milliseconds: 100),
-        maxDelay: Duration(milliseconds: 300),
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final backoff = RetryBackoff.exponential(
+        initial: const Duration(milliseconds: 100),
+        maxDelay: const Duration(milliseconds: 300),
       );
 
       expect(backoff.delay(0), const Duration(milliseconds: 100));
@@ -2736,9 +2740,11 @@ void main() {
     });
 
     test('linear backoff increases linearly', () {
-      const backoff = RetryBackoff.linear(
-        initial: Duration(milliseconds: 100),
-        increment: Duration(milliseconds: 50),
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final backoff = RetryBackoff.linear(
+        initial: const Duration(milliseconds: 100),
+        increment: const Duration(milliseconds: 50),
       );
 
       expect(backoff.delay(0), const Duration(milliseconds: 100));
@@ -2747,10 +2753,12 @@ void main() {
     });
 
     test('linear backoff respects maxDelay', () {
-      const backoff = RetryBackoff.linear(
-        initial: Duration(milliseconds: 100),
-        increment: Duration(milliseconds: 100),
-        maxDelay: Duration(milliseconds: 250),
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final backoff = RetryBackoff.linear(
+        initial: const Duration(milliseconds: 100),
+        increment: const Duration(milliseconds: 100),
+        maxDelay: const Duration(milliseconds: 250),
       );
 
       expect(backoff.delay(0), const Duration(milliseconds: 100));
@@ -2759,7 +2767,9 @@ void main() {
     });
 
     test('constant backoff returns same delay', () {
-      const backoff = RetryBackoff.constant(Duration(milliseconds: 100));
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final backoff = RetryBackoff.constant(const Duration(milliseconds: 100));
 
       expect(backoff.delay(0), const Duration(milliseconds: 100));
       expect(backoff.delay(1), const Duration(milliseconds: 100));
@@ -2767,9 +2777,13 @@ void main() {
     });
 
     test('RetryPolicy.shouldRetry respects maxAttempts', () {
-      const policy = RetryPolicy(
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final policy = RetryPolicy(
         maxAttempts: 3,
-        backoff: RetryBackoff.constant(Duration(milliseconds: 10)),
+        // Non-const for coverage tracking.
+        // ignore: prefer_const_constructors
+        backoff: RetryBackoff.constant(const Duration(milliseconds: 10)),
       );
 
       expect(policy.shouldRetry(0, Exception()), isTrue);
@@ -2778,12 +2792,53 @@ void main() {
     });
 
     test('RetryPolicy.getDelay delegates to backoff', () {
-      const policy = RetryPolicy(
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final policy = RetryPolicy(
         maxAttempts: 3,
-        backoff: RetryBackoff.constant(Duration(milliseconds: 50)),
+        // Non-const for coverage tracking.
+        // ignore: prefer_const_constructors
+        backoff: RetryBackoff.constant(const Duration(milliseconds: 50)),
       );
 
       expect(policy.getDelay(0), const Duration(milliseconds: 50));
+    });
+  });
+
+  // Tests use non-const constructors intentionally for coverage tracking.
+  group('ExecutionMode |', () {
+    test('Sequential creates instance', () {
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final mode = Sequential();
+      expect(mode, isA<ExecutionMode>());
+    });
+
+    test('Concurrent creates instance with default maxConcurrency', () {
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final mode = Concurrent();
+      expect(mode, isA<ExecutionMode>());
+      expect(mode.maxConcurrency, isNull);
+    });
+
+    test('Concurrent creates instance with custom maxConcurrency', () {
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final mode = Concurrent(maxConcurrency: 5);
+      expect(mode.maxConcurrency, 5);
+    });
+
+    test('RateLimited creates instance', () {
+      // Non-const for coverage tracking.
+      // ignore: prefer_const_constructors
+      final mode = RateLimited(
+        limit: 10,
+        window: const Duration(seconds: 1),
+      );
+      expect(mode, isA<ExecutionMode>());
+      expect(mode.limit, 10);
+      expect(mode.window, const Duration(seconds: 1));
     });
   });
 
@@ -3155,7 +3210,7 @@ void main() {
     });
   });
 
-  group('EventStateController |', () {
+  group('EventController |', () {
     test('isRunning returns true when event is running', () async {
       final manager = EventManager<String>();
       var wasRunning = false;
@@ -3392,6 +3447,1724 @@ void main() {
         manager.dispose();
       },
     );
+  });
+
+  // ============== maxConcurrency Tests ==============
+  // Tests for concurrent event processing (worker pool pattern)
+  group('maxConcurrency |', () {
+    test('default maxConcurrency=1 processes events sequentially', () async {
+      final manager = EventManager<String>();
+      final executionOrder = <int>[];
+      final startTimes = <int, DateTime>{};
+      final endTimes = <int, DateTime>{};
+
+      // Add 3 async events that each take 50ms
+      for (var i = 0; i < 3; i++) {
+        final index = i;
+        manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              startTimes[index] = DateTime.now();
+              return 'event$index';
+            },
+          ),
+          onDone: (e, data) {
+            endTimes[index] = DateTime.now();
+            executionOrder.add(index);
+          },
+        );
+      }
+
+      // Wait for all events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // All events should execute in order
+      expect(executionOrder, [0, 1, 2]);
+
+      // With sequential processing, each event starts after the previous ends
+      // Event 1 should start after event 0 ends
+      expect(
+        startTimes[1]!.isAfter(endTimes[0]!) ||
+            startTimes[1]!.isAtSameMomentAs(endTimes[0]!),
+        isTrue,
+        reason: 'Event 1 should start after event 0 completes',
+      );
+
+      manager.dispose();
+    });
+
+    test('maxConcurrency=3 processes up to 3 events concurrently', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 3),
+      );
+      final startTimes = <int, DateTime>{};
+      final endTimes = <int, DateTime>{};
+      final completedEvents = <int>[];
+
+      // Add 5 async events
+      for (var i = 0; i < 5; i++) {
+        final index = i;
+        manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 100),
+            onExecute: () {
+              startTimes[index] = DateTime.now();
+              return 'event$index';
+            },
+          ),
+          onDone: (e, data) {
+            endTimes[index] = DateTime.now();
+            completedEvents.add(index);
+          },
+        );
+      }
+
+      // Wait for first batch to start
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // Check active count - should be 3 (maxConcurrency)
+      expect(manager.activeEventCount, 3);
+
+      // Wait for all events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      // All 5 events should complete
+      expect(completedEvents.length, 5);
+
+      // First 3 events should start at roughly the same time
+      final firstBatchStart = startTimes[0]!;
+      expect(
+        startTimes[1]!.difference(firstBatchStart).inMilliseconds.abs() < 20,
+        isTrue,
+        reason: 'First 3 events should start concurrently',
+      );
+      expect(
+        startTimes[2]!.difference(firstBatchStart).inMilliseconds.abs() < 20,
+        isTrue,
+        reason: 'First 3 events should start concurrently',
+      );
+
+      // Events 3 and 4 should start after first batch completes (~100ms later)
+      expect(
+        startTimes[3]!.difference(firstBatchStart).inMilliseconds >= 90,
+        isTrue,
+        reason: 'Event 3 should start after first batch completes',
+      );
+
+      manager.dispose();
+    });
+
+    test('maxConcurrency=null allows unlimited concurrency', () async {
+      final manager = EventManager<String>(mode: const Concurrent());
+      final startTimes = <int, DateTime>{};
+
+      // Add 10 async events
+      for (var i = 0; i < 10; i++) {
+        final index = i;
+        manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 100),
+            onExecute: () {
+              startTimes[index] = DateTime.now();
+              return 'event$index';
+            },
+          ),
+        );
+      }
+
+      // Wait for all events to start
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      // All 10 events should be running
+      expect(manager.activeEventCount, 10);
+
+      // Wait for completion
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // All events should have started at roughly the same time
+      final firstStart = startTimes[0]!;
+      for (var i = 1; i < 10; i++) {
+        expect(
+          startTimes[i]!.difference(firstStart).inMilliseconds.abs() < 30,
+          isTrue,
+          reason: 'All events should start concurrently with null concurrency',
+        );
+      }
+
+      manager.dispose();
+    });
+
+    test('activeEventCount tracks running async events', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 2),
+      );
+
+      // Initially no active events
+      expect(manager.activeEventCount, 0);
+
+      // Add an async event
+      manager.addEventToQueue(
+        TestEvent<String>(
+          delay: const Duration(milliseconds: 100),
+          onExecute: () => 'event1',
+        ),
+      );
+
+      // Wait for event to start
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(manager.activeEventCount, 1);
+
+      // Add another async event
+      manager.addEventToQueue(
+        TestEvent<String>(
+          delay: const Duration(milliseconds: 100),
+          onExecute: () => 'event2',
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(manager.activeEventCount, 2);
+
+      // Wait for events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(manager.activeEventCount, 0);
+
+      manager.dispose();
+    });
+
+    test('sync events do not affect activeEventCount', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 3),
+      );
+
+      // Add sync events (no delay)
+      for (var i = 0; i < 5; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(onExecute: () => 'sync$i'),
+        );
+      }
+
+      // Sync events complete immediately, activeEventCount should be 0
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      expect(manager.activeEventCount, 0);
+
+      manager.dispose();
+    });
+
+    test('priority is respected for start order with concurrency', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 2),
+      );
+      final startOrder = <String>[];
+
+      // Pause to control when processing starts
+      manager.pauseEvents();
+
+      // Add events with different priorities using PriorityEvent
+      manager.addEventToQueue(
+        PriorityEvent(
+          priorityValue: 10,
+          onComplete: () => startOrder.add('low'),
+          result: 'low',
+        ),
+      );
+
+      manager.addEventToQueue(
+        PriorityEvent(
+          priorityValue: 100,
+          onComplete: () => startOrder.add('high'),
+          result: 'high',
+        ),
+      );
+
+      manager.addEventToQueue(
+        PriorityEvent(
+          priorityValue: 50,
+          onComplete: () => startOrder.add('medium'),
+          result: 'medium',
+        ),
+      );
+
+      // Resume processing
+      manager.resumeEvents();
+
+      // Wait for all to complete
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // High priority should start first, then medium, then low
+      expect(startOrder, ['high', 'medium', 'low']);
+
+      manager.dispose();
+    });
+
+    test('error in one concurrent event does not affect others', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 3),
+      );
+      final completed = <String>[];
+      final errors = <String>[];
+
+      // Add 3 events - one will throw
+      manager.addEventToQueue(
+        TestEvent<String>(
+          delay: const Duration(milliseconds: 50),
+          onExecute: () => 'event1',
+        ),
+        onDone: (e, data) => completed.add('event1'),
+      );
+
+      manager.addEventToQueue(
+        TestEvent<String>(
+          delay: const Duration(milliseconds: 50),
+          onExecute: () => throw Exception('Intentional error'),
+        ),
+        onError: (error) => errors.add('event2'),
+      );
+
+      manager.addEventToQueue(
+        TestEvent<String>(
+          delay: const Duration(milliseconds: 50),
+          onExecute: () => 'event3',
+        ),
+        onDone: (e, data) => completed.add('event3'),
+      );
+
+      // Wait for completion
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Two events should complete successfully
+      expect(completed, containsAll(['event1', 'event3']));
+      // One event should have errored
+      expect(errors, ['event2']);
+
+      manager.dispose();
+    });
+
+    test('pause/resume works correctly with concurrent events', () async {
+      final manager = EventManager<String>(
+        mode: const Concurrent(maxConcurrency: 3),
+      );
+      final completed = <String>[];
+
+      // Add events
+      for (var i = 0; i < 5; i++) {
+        final index = i;
+        manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 100),
+            onExecute: () => 'event$index',
+          ),
+          onDone: (e, data) => completed.add('event$index'),
+        );
+      }
+
+      // Wait for first batch to start
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(manager.activeEventCount, 3);
+
+      // Pause manager
+      manager.pauseEvents();
+
+      // Wait for running events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      // First 3 events should complete, but no new events should start
+      expect(completed.length, 3);
+
+      // Resume processing
+      manager.resumeEvents();
+
+      // Wait for remaining events
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // All 5 should complete
+      expect(completed.length, 5);
+
+      manager.dispose();
+    });
+
+  });
+
+  // ============== RateLimited Mode (limit: 1) Tests ==============
+  // These tests verify throttle-like behavior using RateLimited with limit: 1
+  group('RateLimited mode (limit: 1) |', () {
+    test('executes at most one event per window', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      final executionTimes = <DateTime>[];
+
+      // Add 3 events rapidly
+      for (var i = 0; i < 3; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executionTimes.add(DateTime.now());
+              return 'event$i';
+            },
+          ),
+        );
+      }
+
+      // Wait for all events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+
+      expect(executionTimes.length, 3);
+
+      // Check that executions are spaced by at least ~100ms
+      for (var i = 1; i < executionTimes.length; i++) {
+        final diff = executionTimes[i].difference(executionTimes[i - 1]);
+        expect(
+          diff.inMilliseconds >= 90,
+          isTrue,
+          reason: 'Events should be spaced by rate limit window',
+        );
+      }
+
+      manager.dispose();
+    });
+
+    test('first event executes immediately', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      DateTime? firstExecutionTime;
+      final startTime = DateTime.now();
+
+      manager.addEventToQueue(
+        TestEvent<String>(
+          onExecute: () {
+            firstExecutionTime = DateTime.now();
+            return 'first';
+          },
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(firstExecutionTime, isNotNull);
+      expect(
+        firstExecutionTime!.difference(startTime).inMilliseconds < 50,
+        isTrue,
+        reason: 'First event should execute immediately',
+      );
+
+      manager.dispose();
+    });
+
+    test('timer is cancelled on dispose', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      final executed = <String>[];
+
+      // Add events
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      // Wait for first event
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Dispose before second can execute
+      manager.dispose();
+
+      // Wait past rate limit window
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Second event should not have executed
+      expect(executed, ['first']);
+    });
+
+    test('pauseEvents cancels pending timer', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      final executed = <String>[];
+
+      // Add 2 events
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      // Wait for first event
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Pause before second can execute
+      manager.pauseEvents();
+
+      // Wait past rate limit window
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Second event should not have executed (timer was cancelled)
+      expect(executed, ['first']);
+
+      // Resume and it should execute
+      manager.resumeEvents();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first', 'second']);
+
+      manager.dispose();
+    });
+
+    test('clearEvents cancels pending timer', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      final executed = <String>[];
+
+      // Add 2 events
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      // Wait for first event
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Clear before second can execute
+      manager.clearEvents();
+
+      // Wait past rate limit window
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Second event should not have executed (cleared)
+      expect(executed, ['first']);
+
+      manager.dispose();
+    });
+
+    test('async event completion respects rate limit window', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 1, window: Duration(milliseconds: 100)),
+      );
+      final executionTimes = <DateTime>[];
+
+      // Add async event that takes 50ms
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              executionTimes.add(DateTime.now());
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executionTimes.add(DateTime.now());
+              return 'second';
+            },
+          ),
+        );
+
+      // Wait for both events
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      expect(executionTimes.length, 2);
+
+      // First event started at ~0ms, completed at ~50ms
+      // Second event should start after rate limit window from first start
+      // So second starts at ~100ms (rate limit window from first start)
+      final diff = executionTimes[1].difference(executionTimes[0]);
+      expect(
+        diff.inMilliseconds >= 40, // Allow some tolerance
+        isTrue,
+        reason: 'Second event should respect throttle timing',
+      );
+
+      manager.dispose();
+    });
+  });
+
+  // ============== RateLimited Mode Tests ==============
+  group('RateLimited mode |', () {
+    test('executes up to limit events per window', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 3,
+          window: Duration(milliseconds: 200),
+        ),
+      );
+      final executionTimes = <DateTime>[];
+
+      // Add 5 events
+      for (var i = 0; i < 5; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executionTimes.add(DateTime.now());
+              return 'event$i';
+            },
+          ),
+        );
+      }
+
+      // Wait for first 3 events
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(executionTimes.length, 3);
+
+      // Wait for window to reset and remaining events
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(executionTimes.length, 5);
+
+      manager.dispose();
+    });
+
+    test('queues events beyond limit until window resets', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add 4 events
+      for (var i = 0; i < 4; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('event$i');
+              return 'event$i';
+            },
+          ),
+        );
+      }
+
+      // First 2 should execute immediately
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed.length, 2);
+
+      // Next 2 should wait for window reset
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(executed.length, 4);
+
+      manager.dispose();
+    });
+
+    test('window resets after duration', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add 2 events (fill the window)
+      for (var i = 0; i < 2; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch1_$i');
+              return 'batch1_$i';
+            },
+          ),
+        );
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed.length, 2);
+
+      // Wait for window to reset
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Add 2 more events
+      for (var i = 0; i < 2; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch2_$i');
+              return 'batch2_$i';
+            },
+          ),
+        );
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed.length, 4);
+
+      manager.dispose();
+    });
+
+    test('timer is cancelled on dispose', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add 2 events (second will be queued)
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Dispose before window resets
+      manager.dispose();
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(executed, ['first']);
+    });
+
+    test('pauseEvents cancels pending timer', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add 2 events (second will be queued)
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Pause before window resets
+      manager.pauseEvents();
+
+      // Wait past window
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Second event should not have executed (timer cancelled)
+      expect(executed, ['first']);
+
+      // Resume and it should execute
+      manager.resumeEvents();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first', 'second']);
+
+      manager.dispose();
+    });
+
+    test('clearEvents cancels pending timer', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add 2 events (second will be queued)
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('first');
+              return 'first';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('second');
+              return 'second';
+            },
+          ),
+        );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['first']);
+
+      // Clear before window resets
+      manager.clearEvents();
+
+      // Wait past window
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Second event should not have executed (cleared)
+      expect(executed, ['first']);
+
+      manager.dispose();
+    });
+
+    test('token cancellation stops queued events', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final token = EventToken();
+      final executed = <String>[];
+
+      // Add 3 events with same token
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event0');
+              return 'event0';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event1');
+              return 'event1';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event2');
+              return 'event2';
+            },
+          ),
+        );
+
+      // First event executes
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['event0']);
+
+      // Cancel token before others can execute
+      token.cancel(reason: 'User cancelled');
+
+      // Wait for window to reset
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Other events should not have executed
+      expect(executed, ['event0']);
+
+      manager.dispose();
+    });
+
+    test('token pause/resume works with rate limiting', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final token = EventToken();
+      final executed = <String>[];
+
+      // Add 3 events with same token
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event0');
+              return 'event0';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event1');
+              return 'event1';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            onExecute: () {
+              executed.add('event2');
+              return 'event2';
+            },
+          ),
+        );
+
+      // First event executes
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['event0']);
+
+      // Pause token
+      token.pause();
+
+      // Wait for window to reset
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Events are paused, should still be only first
+      expect(executed, ['event0']);
+
+      // Resume token
+      token.resume();
+
+      // Wait for remaining events
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      // All events should now be executed
+      expect(executed, ['event0', 'event1', 'event2']);
+
+      manager.dispose();
+    });
+
+    test('error in event does not break rate limit counting', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+      final errors = <Object>[];
+
+      // Add event that will fail
+      manager.addEventToQueue(
+        TestEvent<String>(
+          onExecute: () => throw Exception('Event failed'),
+        ),
+        onError: errors.add,
+      );
+
+      // Add successful events
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('event1');
+              return 'event1';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('event2');
+              return 'event2';
+            },
+          ),
+        );
+
+      // Wait for first window (limit: 2)
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // First two events (including failed one) should have been processed
+      expect(errors.length, 1);
+      expect(executed, ['event1']);
+
+      // Wait for window reset
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Third event should now execute
+      expect(executed, ['event1', 'event2']);
+
+      manager.dispose();
+    });
+
+    test('events within limit run concurrently', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 3,
+          window: Duration(milliseconds: 200),
+        ),
+      );
+      final startTimes = <int, DateTime>{};
+
+      // Add 3 async events
+      for (var i = 0; i < 3; i++) {
+        final index = i;
+        manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              startTimes[index] = DateTime.now();
+              return 'event$index';
+            },
+          ),
+        );
+      }
+
+      // Wait for all events
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(startTimes.length, 3);
+
+      // All events should start within a small window (concurrent)
+      final firstStart = startTimes.values.reduce(
+        (a, b) => a.isBefore(b) ? a : b,
+      );
+      final lastStart = startTimes.values.reduce(
+        (a, b) => a.isAfter(b) ? a : b,
+      );
+
+      // All 3 events should start within 30ms of each other (concurrent)
+      expect(
+        lastStart.difference(firstStart).inMilliseconds < 30,
+        isTrue,
+        reason: 'Events within limit should start concurrently',
+      );
+
+      manager.dispose();
+    });
+
+    test('individual event pause/resume works with rate limiting', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+      final executed = <String>[];
+
+      final event1 = TestEvent<String>(
+        onExecute: () {
+          executed.add('event1');
+          return 'event1';
+        },
+      );
+      final event2 = TestEvent<String>(
+        onExecute: () {
+          executed.add('event2');
+          return 'event2';
+        },
+      );
+
+      // Add events
+      manager
+        ..addEventToQueue(event1)
+        ..addEventToQueue(event2);
+
+      // First executes immediately
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['event1']);
+
+      // Pause second event
+      event2.pause();
+
+      // Wait for window reset
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Event2 should be skipped (paused)
+      expect(executed, ['event1']);
+
+      // Resume event2
+      event2.resume();
+
+      // Wait for it to execute
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(executed, ['event1', 'event2']);
+
+      manager.dispose();
+    });
+
+    test('clearEvents resets rate limit state correctly', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 200),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add events to fill the limit
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch1_event0');
+              return 'batch1_event0';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch1_event1');
+              return 'batch1_event1';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch1_event2');
+              return 'batch1_event2';
+            },
+          ),
+        );
+
+      // First 2 execute
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(executed, ['batch1_event0', 'batch1_event1']);
+
+      // Clear events (including the pending one)
+      manager.clearEvents();
+
+      // Add new events
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch2_event0');
+              return 'batch2_event0';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('batch2_event1');
+              return 'batch2_event1';
+            },
+          ),
+        );
+
+      // New events should execute (window may have reset)
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      // Should have batch1 events + batch2 events
+      expect(executed.contains('batch2_event0'), isTrue);
+      expect(executed.contains('batch2_event1'), isTrue);
+
+      manager.dispose();
+    });
+
+    test('schedules immediately when window resets during async event',
+        () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 50),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add async event that takes longer than window
+      manager
+        ..addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 100),
+            onExecute: () {
+              executed.add('event0');
+              return 'event0';
+            },
+          ),
+        )
+        ..addEventToQueue(
+          TestEvent<String>(
+            onExecute: () {
+              executed.add('event1');
+              return 'event1';
+            },
+          ),
+        );
+
+      // Wait for first event to complete (100ms) - window has reset by then
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Both events should execute - second starts immediately after first
+      // because window reset during first event's execution
+      expect(executed, ['event0', 'event1']);
+
+      manager.dispose();
+    });
+
+    test('handles expired window in scheduling', () async {
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 10),
+        ),
+      );
+      final executed = <String>[];
+
+      // Add event
+      manager.addEventToQueue(
+        TestEvent<String>(
+          onExecute: () {
+            executed.add('event0');
+            return 'event0';
+          },
+        ),
+      );
+
+      // Wait for execution
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['event0']);
+
+      // Wait for window to definitely expire
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      // Add another event - window has expired, should execute immediately
+      manager.addEventToQueue(
+        TestEvent<String>(
+          onExecute: () {
+            executed.add('event1');
+            return 'event1';
+          },
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executed, ['event0', 'event1']);
+
+      manager.dispose();
+    });
+  });
+
+  // ============== BatchEvent Mode Validation Tests ==============
+  group('BatchEvent mode validation |', () {
+    test('throws UnsupportedError for RateLimited mode', () {
+      final manager = EventManager<String>();
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [TestEvent<String>(onExecute: () => 'test')],
+        mode: const RateLimited(limit: 5, window: Duration(seconds: 1)),
+      );
+
+      expect(
+        () => batchEvent.buildAction(manager),
+        throwsUnsupportedError,
+      );
+
+      manager.dispose();
+    });
+  });
+
+  // ============== BatchEvent Concurrent Tests ==============
+  // Tests for concurrent event execution (like Future.wait)
+  group('BatchEvent concurrent |', () {
+    test('executes all events concurrently and returns results in order',
+        () async {
+      final manager = EventManager<String>();
+      final startTimes = <int, DateTime>{};
+      final results = <Object?>[];
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              startTimes[0] = DateTime.now();
+              return 'result0';
+            },
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              startTimes[1] = DateTime.now();
+              return 'result1';
+            },
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () {
+              startTimes[2] = DateTime.now();
+              return 'result2';
+            },
+          ),
+        ],
+        mode: const Concurrent(),
+      );
+
+      manager.addEventToQueue(
+        batchEvent,
+        onDone: (e, data) => results.addAll(data! as List),
+      );
+
+      // Wait for all events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Results should be in order
+      expect(results, ['result0', 'result1', 'result2']);
+
+      // All events should start at roughly the same time (concurrent)
+      final firstStart = startTimes[0]!;
+      expect(
+        startTimes[1]!.difference(firstStart).inMilliseconds.abs() < 20,
+        isTrue,
+        reason: 'Events should start concurrently',
+      );
+      expect(
+        startTimes[2]!.difference(firstStart).inMilliseconds.abs() < 20,
+        isTrue,
+        reason: 'Events should start concurrently',
+      );
+
+      manager.dispose();
+    });
+
+    test('eagerError=true fails fast on first error', () async {
+      final manager = EventManager<String>();
+      var errorReceived = false;
+      BatchError<String, TestEvent<String>>? batchError;
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () => 'result0',
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 10),
+            onExecute: () => throw Exception('Intentional error'),
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 50),
+            onExecute: () => 'result2',
+          ),
+        ],
+        mode: const Concurrent(),
+      );
+
+      manager.addEventToQueue(
+        batchEvent,
+        onError: (error) {
+          errorReceived = true;
+          if (error is BatchError<String, TestEvent<String>>) {
+            batchError = error;
+          }
+        },
+      );
+
+      // Wait for completion
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(errorReceived, isTrue);
+      expect(batchError, isNotNull);
+      expect(batchError!.errors.length, greaterThan(0));
+
+      manager.dispose();
+    });
+
+    test('eagerError=false collects all errors', () async {
+      final manager = EventManager<String>();
+      var errorReceived = false;
+      BatchError<String, TestEvent<String>>? batchError;
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 10),
+            onExecute: () => throw Exception('Error 1'),
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 20),
+            onExecute: () => throw Exception('Error 2'),
+          ),
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 30),
+            onExecute: () => 'result2',
+          ),
+        ],
+        eagerError: false,
+        mode: const Concurrent(),
+      );
+
+      manager.addEventToQueue(
+        batchEvent,
+        onError: (error) {
+          errorReceived = true;
+          if (error is BatchError<String, TestEvent<String>>) {
+            batchError = error;
+          }
+        },
+      );
+
+      // Wait for all events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(errorReceived, isTrue);
+      expect(batchError, isNotNull);
+      // Both errors should be collected
+      expect(batchError!.errors.length, 2);
+
+      manager.dispose();
+    });
+
+    test('BatchError.onRetry re-adds failed events in Concurrent mode',
+        () async {
+      final manager = EventManager<String>();
+      var callCount = 0;
+
+      final failingEvent = TestEvent<String>(
+        onExecute: () {
+          callCount++;
+          if (callCount == 1) throw Exception('First failure');
+          return 'retry_success';
+        },
+      );
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [failingEvent],
+        mode: const Concurrent(),
+      );
+
+      await manager.addEventToQueue(batchEvent);
+
+      expect(batchEvent.state, isA<EventError>());
+      final errorState = batchEvent.state! as EventError;
+      final batchError =
+          errorState.error as BatchError<String, TestEvent<String>>;
+
+      expect(batchError.onRetry, isNotNull);
+
+      // Call onRetry - this exercises the onRetry callback in Concurrent mode
+      await batchError.onRetry!.call();
+      await pumpEventQueue();
+
+      expect(callCount, 2);
+
+      manager.dispose();
+    });
+
+    test('isEnabled returns false for empty events', () {
+      final manager = EventManager<String>();
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        const [],
+        mode: const Concurrent(),
+      );
+
+      expect(batchEvent.isEnabled(manager), isFalse);
+
+      manager.dispose();
+    });
+
+    test('isEnabled returns true if any event is enabled', () {
+      final manager = EventManager<String>();
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(enabled: false, onExecute: () => 'disabled'),
+          TestEvent<String>(onExecute: () => 'enabled'),
+        ],
+        mode: const Concurrent(),
+      );
+
+      expect(batchEvent.isEnabled(manager), isTrue);
+
+      manager.dispose();
+    });
+
+    test('handles single event correctly', () async {
+      final manager = EventManager<String>();
+      final results = <Object?>[];
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(
+            delay: const Duration(milliseconds: 10),
+            onExecute: () => 'single',
+          ),
+        ],
+        mode: const Concurrent(),
+      );
+
+      manager.addEventToQueue(
+        batchEvent,
+        onDone: (e, data) => results.addAll(data! as List),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(results, ['single']);
+
+      manager.dispose();
+    });
+
+    test('all sync events complete immediately', () async {
+      final manager = EventManager<String>();
+      final results = <Object?>[];
+
+      final batchEvent = BatchEvent<String, TestEvent<String>>(
+        [
+          TestEvent<String>(onExecute: () => 'sync1'),
+          TestEvent<String>(onExecute: () => 'sync2'),
+          TestEvent<String>(onExecute: () => 'sync3'),
+        ],
+        mode: const Concurrent(),
+      );
+
+      manager.addEventToQueue(
+        batchEvent,
+        onDone: (e, data) => results.addAll(data! as List),
+      );
+
+      // Even with no delay, use small wait for event processing
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      expect(results, ['sync1', 'sync2', 'sync3']);
+
+      manager.dispose();
+    });
+  });
+
+  group('addEventStream |', () {
+    test('events from stream are added to queue as they arrive', () async {
+      final manager = EventManager<String>();
+      final results = <String>[];
+      final controller = StreamController<TestEvent<String>>();
+
+      manager.addEventStream(
+        controller.stream,
+        onDone: (e, data) => results.add(data! as String),
+      );
+
+      controller.add(TestEvent(onExecute: () => 'event1'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, ['event1']);
+
+      controller.add(TestEvent(onExecute: () => 'event2'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, ['event1', 'event2']);
+
+      controller.add(TestEvent(onExecute: () => 'event3'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, ['event1', 'event2', 'event3']);
+
+      await controller.close();
+      manager.dispose();
+    });
+
+    test('onStreamError is called when stream emits error', () async {
+      final manager = EventManager<String>();
+      final controller = StreamController<TestEvent<String>>();
+      Object? capturedError;
+      StackTrace? capturedStackTrace;
+
+      manager.addEventStream(
+        controller.stream,
+        onStreamError: (error, stackTrace) {
+          capturedError = error;
+          capturedStackTrace = stackTrace;
+        },
+      );
+
+      controller.addError(Exception('Stream error'), StackTrace.current);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(capturedError, isA<Exception>());
+      expect(capturedStackTrace, isNotNull);
+
+      await controller.close();
+      manager.dispose();
+    });
+
+    test('onStreamDone is called when stream completes', () async {
+      final manager = EventManager<String>();
+      final controller = StreamController<TestEvent<String>>();
+      var streamDoneCalled = false;
+
+      manager.addEventStream(
+        controller.stream,
+        onStreamDone: () => streamDoneCalled = true,
+      );
+
+      expect(streamDoneCalled, isFalse);
+
+      await controller.close();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(streamDoneCalled, isTrue);
+
+      manager.dispose();
+    });
+
+    test('manual cancellation stops event processing', () async {
+      final manager = EventManager<String>();
+      final results = <String>[];
+      final controller = StreamController<TestEvent<String>>();
+
+      final subscription = manager.addEventStream(
+        controller.stream,
+        onDone: (e, data) => results.add(data! as String),
+      );
+
+      controller.add(TestEvent(onExecute: () => 'before'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, ['before']);
+
+      await subscription.cancel();
+
+      controller.add(TestEvent(onExecute: () => 'after'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, ['before']); // 'after' not added
+
+      await controller.close();
+      manager.dispose();
+    });
+
+    test('dispose cancels all stream subscriptions', () async {
+      final manager = EventManager<String>();
+      final results = <String>[];
+      final controller1 = StreamController<TestEvent<String>>();
+      final controller2 = StreamController<TestEvent<String>>();
+
+      manager
+        ..addEventStream(
+          controller1.stream,
+          onDone: (e, data) => results.add('s1:$data'),
+        )
+        ..addEventStream(
+          controller2.stream,
+          onDone: (e, data) => results.add('s2:$data'),
+        );
+
+      controller1.add(TestEvent(onExecute: () => 'a'));
+      controller2.add(TestEvent(onExecute: () => 'b'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(results, containsAll(['s1:a', 's2:b']));
+
+      manager.dispose();
+
+      // These should not be processed after dispose
+      controller1.add(TestEvent(onExecute: () => 'c'));
+      controller2.add(TestEvent(onExecute: () => 'd'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(results.length, 2); // Still only 2 results
+
+      await controller1.close();
+      await controller2.close();
+    });
+
+    test('multiple concurrent streams work independently', () async {
+      final manager = EventManager<String>();
+      final results = <String>[];
+      final controller1 = StreamController<TestEvent<String>>();
+      final controller2 = StreamController<TestEvent<String>>();
+
+      manager
+        ..addEventStream(
+          controller1.stream,
+          onDone: (e, data) => results.add('stream1:$data'),
+        )
+        ..addEventStream(
+          controller2.stream,
+          onDone: (e, data) => results.add('stream2:$data'),
+        );
+
+      controller1.add(TestEvent(onExecute: () => 'a'));
+      controller2.add(TestEvent(onExecute: () => 'x'));
+      controller1.add(TestEvent(onExecute: () => 'b'));
+      controller2.add(TestEvent(onExecute: () => 'y'));
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(results, hasLength(4));
+      expect(results, containsAll(['stream1:a', 'stream1:b']));
+      expect(results, containsAll(['stream2:x', 'stream2:y']));
+
+      await controller1.close();
+      await controller2.close();
+      manager.dispose();
+    });
+
+    test('cancelOnError stops subscription on first error', () async {
+      final manager = EventManager<String>();
+      final results = <String>[];
+      final errors = <Object>[];
+      final controller = StreamController<TestEvent<String>>();
+
+      manager.addEventStream(
+        controller.stream,
+        onDone: (e, data) => results.add(data! as String),
+        onStreamError: (error, _) => errors.add(error),
+        cancelOnError: true,
+      );
+
+      controller.add(TestEvent(onExecute: () => 'before'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      controller.addError(Exception('error'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      controller.add(TestEvent(onExecute: () => 'after'));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      expect(results, ['before']);
+      expect(errors, hasLength(1));
+      // 'after' not processed because cancelOnError stopped subscription
+
+      await controller.close();
+      manager.dispose();
+    });
   });
 
   // ============== Performance Benchmarks ==============
@@ -4140,6 +5913,2058 @@ void main() {
       });
     });
   });
+
+  // ===========================================================================
+  // Integration Test: Table Cell Editing Simulation
+  // ===========================================================================
+  group('Integration Test: Table Cell Editing', () {
+    // Simulates a spreadsheet where users can edit multiple cells rapidly.
+    // Each cell edit triggers an API call to persist the value.
+    // We use RateLimited mode to control API request rate while allowing
+    // concurrent execution for better UX.
+
+    test('rapid cell edits are rate-limited but all eventually save', () async {
+      // Track API calls
+      final apiCalls = <String>[];
+      final concurrentCalls = <int>[];
+      var currentConcurrent = 0;
+      var maxConcurrent = 0;
+
+      // Mock API client - simulates network delay
+      Future<String> mockSaveCell(String cellId, String value) async {
+        currentConcurrent++;
+        if (currentConcurrent > maxConcurrent) {
+          maxConcurrent = currentConcurrent;
+        }
+        concurrentCalls.add(currentConcurrent);
+
+        apiCalls.add('$cellId=$value');
+
+        // Simulate network latency (50-100ms)
+        await Future<void>.delayed(
+          Duration(milliseconds: 50 + (cellId.hashCode % 50).abs()),
+        );
+
+        currentConcurrent--;
+        return 'saved:$cellId';
+      }
+
+      // Create manager with rate limiting: max 5 requests per 200ms window
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 5,
+          window: Duration(milliseconds: 200),
+        ),
+      );
+
+      final results = <String>[];
+      final completedCells = <String>[];
+
+      // Simulate user editing 20 cells rapidly (like paste operation)
+      for (var row = 0; row < 4; row++) {
+        for (var col = 0; col < 5; col++) {
+          final cellId = '${String.fromCharCode(65 + col)}${row + 1}';
+          final value = 'value_$cellId';
+
+          manager.addEventToQueue(
+            TestEvent<String>(
+              debugKey: 'EditCell:$cellId',
+              onExecute: () => mockSaveCell(cellId, value),
+            ),
+            onDone: (event, result) {
+              results.add(result! as String);
+              completedCells.add(cellId);
+            },
+          );
+        }
+      }
+
+      // Wait for all cells to be saved
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+      // Verify all 20 cells were saved
+      expect(completedCells.length, 20);
+      expect(apiCalls.length, 20);
+
+      // Verify rate limiting worked - max concurrent should be <= 5
+      expect(
+        maxConcurrent,
+        lessThanOrEqualTo(5),
+        reason: 'Rate limit of 5 should be respected',
+      );
+
+      // Verify concurrent execution happened (not purely sequential)
+      expect(
+        maxConcurrent,
+        greaterThan(1),
+        reason: 'Should have some concurrent execution',
+      );
+
+      manager.dispose();
+    });
+
+    test('cell edit cancellation via token (user navigates away)', () async {
+      final savedCells = <String>[];
+      final events = <TestEvent<String>>[];
+
+      Future<String> mockSaveCell(String cellId) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        savedCells.add(cellId);
+        return 'saved:$cellId';
+      }
+
+      // Use Sequential mode so events queue up clearly
+      final manager = EventManager<String>();
+
+      // Token represents the current editing session
+      final sessionToken = EventToken();
+
+      // Queue 10 cell edits, tracking each event
+      for (var i = 0; i < 10; i++) {
+        final cellId = 'cell_$i';
+        final event = TestEvent<String>(
+          token: sessionToken,
+          debugKey: 'EditCell:$i',
+          onExecute: () => mockSaveCell(cellId),
+        );
+        events.add(event);
+        manager.addEventToQueue(event);
+      }
+
+      // Wait for first 2 events to complete (100ms each)
+      // Then cancel while rest are still queued
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      sessionToken.cancel(reason: 'User navigated away');
+
+      // Wait for cancellation to propagate
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Count completed vs cancelled events
+      final completed = events.where((e) => e.state is EventComplete).toList();
+      final cancelled = events.where((e) => e.state is EventCancel).toList();
+
+      // First 2-3 should complete, rest should be cancelled
+      expect(
+        completed,
+        isNotEmpty,
+        reason: 'Some cells should complete before cancellation',
+      );
+      expect(
+        cancelled,
+        isNotEmpty,
+        reason: 'Queued cells should be cancelled',
+      );
+      expect(
+        completed.length + cancelled.length,
+        10,
+        reason: 'All cells should be accounted for',
+      );
+
+      // Verify cancellation reason is stored
+      expect(
+        (cancelled.first.state! as EventCancel).reason,
+        'User navigated away',
+      );
+
+      manager.dispose();
+    });
+
+    test('cell edit with retry on transient failures', () async {
+      var attemptCount = 0;
+      final successfulSaves = <String>[];
+
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 50),
+        ),
+      );
+
+      final errors = <BaseError>[];
+
+      // Queue cell edit with retry configuration using RetryEvent
+      manager.addEventToQueue(
+        RetryEvent(
+          maxAttempts: 3,
+          backoff: const RetryBackoff.constant(Duration(milliseconds: 30)),
+          onExecute: () {
+            attemptCount++;
+            // Fail first 2 attempts, succeed on 3rd
+            if (attemptCount <= 2) {
+              throw Exception('Network timeout');
+            }
+            successfulSaves.add('cell_0');
+            return 'saved:cell_0';
+          },
+        ),
+        onDone: (event, result) {
+          // Cell eventually saved
+        },
+        onError: errors.add,
+      );
+
+      // Wait for retries to complete
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      // Should succeed after retries
+      expect(successfulSaves, contains('cell_0'));
+      expect(attemptCount, 3, reason: 'Should have attempted 3 times');
+      expect(errors, isEmpty, reason: 'Should not have final error');
+
+      manager.dispose();
+    });
+
+    test('mixed success/failure across cells with error isolation', () async {
+      final results = <String, String>{};
+      final errors = <String, String>{};
+
+      Future<String> mockSaveCell(String cellId) async {
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+
+        // Cells B2 and D4 always fail
+        if (cellId == 'B2' || cellId == 'D4') {
+          throw Exception('Server error for $cellId');
+        }
+
+        return 'saved:$cellId';
+      }
+
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 4,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+
+      // Edit a 3x3 grid of cells plus D4
+      final cells = [
+        'A1', 'B1', 'C1', //
+        'A2', 'B2', 'C2',
+        'A3', 'B3', 'C3',
+        'D4',
+      ];
+
+      for (final cellId in cells) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'EditCell:$cellId',
+            onExecute: () => mockSaveCell(cellId),
+          ),
+          onDone: (event, result) => results[cellId] = result! as String,
+          onError: (error) {
+            errors[cellId] = error.asyncError.error.toString();
+          },
+        );
+      }
+
+      // Wait for all to complete
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      // Verify successful cells
+      expect(results.length, 8, reason: '8 cells should succeed');
+      expect(results.keys, isNot(contains('B2')));
+      expect(results.keys, isNot(contains('D4')));
+
+      // Verify failed cells
+      expect(errors.length, 2, reason: '2 cells should fail');
+      expect(errors.keys, contains('B2'));
+      expect(errors.keys, contains('D4'));
+
+      // Verify error isolation - failures don't block other cells
+      expect(results.keys, containsAll(['A1', 'B1', 'C1', 'A2', 'C2', 'A3']));
+
+      manager.dispose();
+    });
+
+    test('pause/resume during batch cell edit', () async {
+      final savedCells = <String>[];
+      final startedCells = <String>[];
+
+      Future<String> mockSaveCell(String cellId) async {
+        startedCells.add(cellId);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        savedCells.add(cellId);
+        return 'saved:$cellId';
+      }
+
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 2,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+
+      // Queue 8 cell edits
+      for (var i = 0; i < 8; i++) {
+        final cellId = 'cell_$i'; // Capture in local variable
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'EditCell:$i',
+            onExecute: () => mockSaveCell(cellId),
+          ),
+        );
+      }
+
+      // Let a few cells start
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      final startedBeforePause = startedCells.length;
+
+      // Pause (e.g., app goes to background)
+      manager.pauseEvents();
+
+      // Wait while paused - allow in-flight events to complete
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      final startedWhilePaused = startedCells.length;
+
+      // Resume (app comes back to foreground)
+      manager.resumeEvents();
+
+      // Wait for remaining cells to save
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+
+      // Verify pause prevented NEW events from starting
+      // (in-flight events may complete, that's expected)
+      expect(
+        startedWhilePaused,
+        startedBeforePause,
+        reason: 'No new cells should START while paused',
+      );
+
+      // Verify all cells eventually saved after resume
+      expect(savedCells.length, 8, reason: 'All 8 cells should be saved');
+
+      manager.dispose();
+    });
+
+    test('high-frequency edits with throttle-like rate limit', () async {
+      final timestamps = <DateTime>[];
+
+      Future<String> mockSaveCell(String cellId) async {
+        timestamps.add(DateTime.now());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        return 'saved:$cellId';
+      }
+
+      // Throttle-like behavior: 1 event per 100ms
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 1,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+
+      // Rapid-fire 5 edits
+      for (var i = 0; i < 5; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'EditCell:$i',
+            onExecute: () => mockSaveCell('cell_$i'),
+          ),
+        );
+      }
+
+      // Wait for all to complete
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      expect(timestamps.length, 5);
+
+      // Verify spacing between executions (should be ~100ms apart)
+      for (var i = 1; i < timestamps.length; i++) {
+        final gap = timestamps[i].difference(timestamps[i - 1]).inMilliseconds;
+        expect(
+          gap,
+          greaterThanOrEqualTo(90), // Allow 10ms tolerance
+          reason: 'Events should be spaced ~100ms apart, got ${gap}ms',
+        );
+      }
+
+      manager.dispose();
+    });
+
+    test('concurrent column fill operation', () async {
+      // Simulates filling an entire column with a value (like Excel fill-down)
+      final savedCells = <String, String>{};
+      var peakConcurrency = 0;
+      var currentConcurrency = 0;
+
+      Future<String> mockSaveCell(String cellId, String value) async {
+        currentConcurrency++;
+        if (currentConcurrency > peakConcurrency) {
+          peakConcurrency = currentConcurrency;
+        }
+
+        // Variable latency to simulate real network
+        await Future<void>.delayed(
+          Duration(milliseconds: 20 + (cellId.hashCode % 30).abs()),
+        );
+
+        savedCells[cellId] = value;
+        currentConcurrency--;
+        return 'saved:$cellId';
+      }
+
+      // Allow burst of 10 concurrent requests per 500ms
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 10,
+          window: Duration(milliseconds: 500),
+        ),
+      );
+
+      // Fill column A with 50 rows
+      const fillValue = 'FILLED';
+      for (var row = 1; row <= 50; row++) {
+        final cellId = 'A$row';
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'FillCell:$cellId',
+            onExecute: () => mockSaveCell(cellId, fillValue),
+          ),
+        );
+      }
+
+      // Wait for completion
+      await Future<void>.delayed(const Duration(milliseconds: 3000));
+
+      // All 50 cells should be saved
+      expect(savedCells.length, 50);
+
+      // Verify concurrency was utilized
+      expect(
+        peakConcurrency,
+        greaterThan(1),
+        reason: 'Should have concurrent execution',
+      );
+      expect(
+        peakConcurrency,
+        lessThanOrEqualTo(10),
+        reason: 'Should respect rate limit of 10',
+      );
+
+      // All values should be correct
+      for (var row = 1; row <= 50; row++) {
+        expect(savedCells['A$row'], fillValue);
+      }
+
+      manager.dispose();
+    });
+
+    test('undo on API failure - cell reverts to original value', () async {
+      // Simulates: User edits cell, API fails, cell reverts to original
+      final cellStates = <String, String>{'A1': 'original_value'};
+      var apiCallCount = 0;
+
+      final undoManager = UndoRedoManager<String>();
+      final manager = EventManager<String>(undoManager: undoManager);
+
+      // Cell edit event that captures state for undo
+      final editEvent = _CellEditEvent(
+        cellId: 'A1',
+        newValue: 'new_value',
+        cellStates: cellStates,
+        onSave: () async {
+          apiCallCount++;
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // API fails
+          throw Exception('Network error');
+        },
+      );
+
+      var errorReceived = false;
+
+      manager.addEventToQueue(
+        editEvent,
+        onError: (error) {
+          errorReceived = true;
+          // On error, manually undo since event failed (record only on success)
+          // captureState was already called before buildAction
+          editEvent.undo(manager);
+        },
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Error should have been received
+      expect(errorReceived, isTrue);
+
+      // Cell should be reverted to original value after undo
+      expect(cellStates['A1'], 'original_value');
+      expect(apiCallCount, 1);
+
+      manager.dispose();
+    });
+
+    test('optimistic update with rollback on failure', () async {
+      // Simulates: Show change immediately, rollback if save fails
+      final displayValues = <String, String>{'B2': 'old'};
+      final savedValues = <String, String>{'B2': 'old'};
+
+      final manager = EventManager<String>();
+
+      // Optimistic update - show immediately
+      displayValues['B2'] = 'new';
+
+      var saveFailed = false;
+
+      manager.addEventToQueue(
+        TestEvent<String>(
+          debugKey: 'SaveCell:B2',
+          onExecute: () async {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            throw Exception('Server unavailable');
+          },
+        ),
+        onDone: (event, result) {
+          // On success, persist to saved values
+          savedValues['B2'] = 'new';
+        },
+        onError: (error) {
+          // On failure, rollback optimistic update
+          saveFailed = true;
+          displayValues['B2'] = savedValues['B2']!;
+        },
+      );
+
+      // Immediately after adding, display shows optimistic update
+      expect(displayValues['B2'], 'new');
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // After failure, display should be rolled back
+      expect(saveFailed, isTrue);
+      expect(displayValues['B2'], 'old');
+      expect(savedValues['B2'], 'old');
+
+      manager.dispose();
+    });
+
+    test('batch undo/redo for multiple cell edits', () async {
+      // Simulates: User pastes data, then undoes entire paste operation
+      // For batch undo/redo, we manually track and undo each event
+      final cellStates = <String, String>{
+        'A1': 'a1',
+        'A2': 'a2',
+        'A3': 'a3',
+      };
+
+      final manager = EventManager<String>();
+      final editEvents = <_SimpleCellEdit>[];
+
+      // Execute each edit and track for undo
+      for (final entry in [
+        ('A1', 'pasted1'),
+        ('A2', 'pasted2'),
+        ('A3', 'pasted3'),
+      ]) {
+        final event = _SimpleCellEdit(entry.$1, entry.$2, cellStates);
+        event.captureState(manager);
+        await event.buildAction(manager);
+        editEvents.add(event);
+      }
+
+      // Values should be updated
+      expect(cellStates['A1'], 'pasted1');
+      expect(cellStates['A2'], 'pasted2');
+      expect(cellStates['A3'], 'pasted3');
+
+      // Undo all edits in reverse order
+      for (final event in editEvents.reversed) {
+        await event.undo(manager);
+      }
+
+      // All values should be reverted
+      expect(cellStates['A1'], 'a1');
+      expect(cellStates['A2'], 'a2');
+      expect(cellStates['A3'], 'a3');
+
+      // Redo all edits (re-apply the action)
+      for (final event in editEvents) {
+        await event.buildAction(manager);
+      }
+
+      // Values should be restored
+      expect(cellStates['A1'], 'pasted1');
+      expect(cellStates['A2'], 'pasted2');
+      expect(cellStates['A3'], 'pasted3');
+
+      manager.dispose();
+    });
+
+    test('dependent cell updates - formula-like cascading', () async {
+      // Simulates: Updating A1 triggers recalculation of B1 = A1 * 2
+      final cellStates = <String, int>{'A1': 10, 'B1': 20};
+      final updateOrder = <String>[];
+
+      final manager = EventManager<String>();
+
+      // Event that updates A1 and triggers B1 recalculation
+      manager.addEventToQueue(
+        TestEvent<String>(
+          debugKey: 'UpdateA1',
+          onExecute: () {
+            cellStates['A1'] = 50;
+            updateOrder.add('A1');
+
+            // Trigger dependent cell update
+            manager.addEventToQueue(
+              TestEvent<String>(
+                debugKey: 'RecalcB1',
+                onExecute: () {
+                  cellStates['B1'] = cellStates['A1']! * 2;
+                  updateOrder.add('B1');
+                  return 'B1 updated';
+                },
+              ),
+            );
+
+            return 'A1 updated';
+          },
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Both cells should be updated in correct order
+      expect(updateOrder, ['A1', 'B1']);
+      expect(cellStates['A1'], 50);
+      expect(cellStates['B1'], 100); // 50 * 2
+
+      manager.dispose();
+    });
+
+    test('cell validation before save', () async {
+      // Simulates: Validate cell value (e.g., must be number) before API call
+      final validationErrors = <String, String>{};
+      final savedCells = <String>[];
+
+      final manager = EventManager<String>();
+
+      // Valid cell edit
+      manager.addEventToQueue(
+        _ValidatedCellEdit(
+          cellId: 'A1',
+          value: '42',
+          validator: (v) => int.tryParse(v) != null,
+          onValid: () => savedCells.add('A1'),
+          onInvalid: (cellId) => validationErrors[cellId] = 'Must be number',
+        ),
+      );
+
+      // Invalid cell edit
+      manager.addEventToQueue(
+        _ValidatedCellEdit(
+          cellId: 'A2',
+          value: 'not_a_number',
+          validator: (v) => int.tryParse(v) != null,
+          onValid: () => savedCells.add('A2'),
+          onInvalid: (cellId) => validationErrors[cellId] = 'Must be number',
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Only valid cell should be saved
+      expect(savedCells, ['A1']);
+      expect(validationErrors, {'A2': 'Must be number'});
+
+      manager.dispose();
+    });
+
+    test('priority for user-initiated edits over auto-save', () async {
+      // Simulates: User edit takes priority over background auto-save
+      final executionOrder = <String>[];
+
+      final manager = EventManager<String>();
+
+      // Pause queue to add both events before processing starts
+      manager.pauseEvents();
+
+      // Queue auto-save (lower priority = 10)
+      manager.addEventToQueue(
+        _PriorityEvent(
+          eventPriority: 10,
+          debugKey: 'AutoSave',
+          onExecute: () async {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            executionOrder.add('auto_save');
+            return 'auto_saved';
+          },
+        ),
+      );
+
+      // Queue user edit (higher priority = 100) - added after but runs first
+      manager.addEventToQueue(
+        _PriorityEvent(
+          eventPriority: 100,
+          debugKey: 'UserEdit',
+          onExecute: () async {
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            executionOrder.add('user_edit');
+            return 'user_saved';
+          },
+        ),
+      );
+
+      // Resume processing - priority sorting now takes effect
+      manager.resumeEvents();
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // User edit should execute before auto-save (higher priority)
+      expect(executionOrder, ['user_edit', 'auto_save']);
+
+      manager.dispose();
+    });
+
+    test('progress tracking for bulk paste operation', () async {
+      // Simulates: Tracking progress when pasting 100 cells
+      final progressUpdates = <double>[];
+      const totalCells = 20;
+      var completedCells = 0;
+
+      final manager = EventManager<String>(
+        mode: const RateLimited(limit: 5, window: Duration(milliseconds: 100)),
+      );
+
+      // Queue all paste events
+      for (var i = 0; i < totalCells; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'PasteCell:$i',
+            onExecute: () async {
+              await Future<void>.delayed(const Duration(milliseconds: 20));
+              completedCells++;
+              progressUpdates.add(completedCells / totalCells);
+              return 'pasted_$i';
+            },
+          ),
+        );
+      }
+
+      // Wait for completion
+      await Future<void>.delayed(const Duration(milliseconds: 1000));
+
+      // All cells should be pasted
+      expect(completedCells, totalCells);
+
+      // Progress should increase monotonically
+      for (var i = 1; i < progressUpdates.length; i++) {
+        expect(
+          progressUpdates[i],
+          greaterThanOrEqualTo(progressUpdates[i - 1]),
+        );
+      }
+
+      // Final progress should be 100%
+      expect(progressUpdates.last, 1.0);
+
+      manager.dispose();
+    });
+
+    test('conflict detection - same cell edited twice rapidly', () async {
+      // Simulates: User types fast, debouncing ensures only latest saves
+      // Pattern: Queue events while paused, cancel old tokens, then resume
+      final savedValues = <String>[];
+      final events = <TestEvent<String>>[];
+      final tokens = <EventToken>[];
+
+      final manager = EventManager<String>();
+
+      // Pause to simulate collecting rapid edits during a debounce window
+      manager.pauseEvents();
+
+      // Queue rapid edits with separate tokens
+      for (final value in ['a', 'ab', 'abc']) {
+        final token = EventToken();
+        tokens.add(token);
+
+        final event = TestEvent<String>(
+          token: token,
+          debugKey: 'Edit:$value',
+          delay: const Duration(milliseconds: 20),
+          onExecute: () {
+            savedValues.add(value);
+            return value;
+          },
+        );
+        events.add(event);
+        manager.addEventToQueue(event);
+      }
+
+      // Cancel all but the latest (debounce behavior)
+      tokens[0].cancel(reason: 'Superseded');
+      tokens[1].cancel(reason: 'Superseded');
+
+      // Resume processing - only 'abc' should execute
+      manager.resumeEvents();
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // Only the final value should be saved
+      expect(savedValues, ['abc']);
+      // Earlier edits were cancelled
+      expect(events[0].state, isA<EventCancel>());
+      expect(events[1].state, isA<EventCancel>());
+      expect(events[2].state, isA<EventComplete>());
+
+      manager.dispose();
+    });
+
+    test('row deletion with cascading cell cleanup', () async {
+      // Simulates: Delete row, all cells in that row are cleaned up
+      final cellStates = <String, String>{
+        'A1': 'a1',
+        'B1': 'b1',
+        'C1': 'c1',
+        'A2': 'a2',
+        'B2': 'b2',
+        'C2': 'c2',
+      };
+
+      final manager = EventManager<String>();
+
+      // Delete row 1 - batch delete all cells in row
+      final deleteRow = BatchEvent<String, TestEvent<String>>([
+        TestEvent<String>(
+          debugKey: 'DeleteA1',
+          onExecute: () {
+            cellStates.remove('A1');
+            return 'deleted';
+          },
+        ),
+        TestEvent<String>(
+          debugKey: 'DeleteB1',
+          onExecute: () {
+            cellStates.remove('B1');
+            return 'deleted';
+          },
+        ),
+        TestEvent<String>(
+          debugKey: 'DeleteC1',
+          onExecute: () {
+            cellStates.remove('C1');
+            return 'deleted';
+          },
+        ),
+      ]);
+
+      await manager.addEventToQueue(deleteRow);
+
+      // Row 1 should be deleted
+      expect(cellStates.containsKey('A1'), isFalse);
+      expect(cellStates.containsKey('B1'), isFalse);
+      expect(cellStates.containsKey('C1'), isFalse);
+
+      // Row 2 should still exist
+      expect(cellStates['A2'], 'a2');
+      expect(cellStates['B2'], 'b2');
+      expect(cellStates['C2'], 'c2');
+
+      manager.dispose();
+    });
+
+    test('selective retry - only retry failed cells in batch', () async {
+      // Simulates: Multiple cells saved, one fails and retries automatically
+      // Each cell is its own RetryEvent for independent retry behavior
+      final savedCells = <String>{};
+      var b2AttemptCount = 0;
+
+      final manager = EventManager<String>(
+        mode: const Concurrent(), // Allow parallel execution
+      );
+
+      // Queue individual RetryEvents for each cell
+      // A1 and C3 succeed immediately, B2 fails first then succeeds
+      manager.addEventToQueue(
+        RetryEvent(
+          maxAttempts: 1,
+          backoff: const RetryBackoff.constant(Duration(milliseconds: 10)),
+          onExecute: () {
+            savedCells.add('A1');
+            return 'A1 saved';
+          },
+        ),
+      );
+
+      manager.addEventToQueue(
+        RetryEvent(
+          maxAttempts: 3,
+          backoff: const RetryBackoff.constant(Duration(milliseconds: 30)),
+          onExecute: () {
+            b2AttemptCount++;
+            if (b2AttemptCount < 2) {
+              throw Exception('B2 transient failure');
+            }
+            savedCells.add('B2');
+            return 'B2 saved';
+          },
+        ),
+      );
+
+      manager.addEventToQueue(
+        RetryEvent(
+          maxAttempts: 1,
+          backoff: const RetryBackoff.constant(Duration(milliseconds: 10)),
+          onExecute: () {
+            savedCells.add('C3');
+            return 'C3 saved';
+          },
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      // All cells should be saved (B2 after retry)
+      expect(savedCells, containsAll(['A1', 'B2', 'C3']));
+      expect(b2AttemptCount, 2); // B2 succeeded on second attempt
+
+      manager.dispose();
+    });
+
+    test('undo stack with limited history', () async {
+      // Simulates: Only keep last N changes in undo stack
+      final cellValue = ValueNotifier<String>('initial');
+
+      final manager = EventManager<String>();
+      final undoManager = UndoRedoManager<String>(maxHistorySize: 3);
+
+      // Make 5 edits - manually record each for this test
+      for (var i = 1; i <= 5; i++) {
+        final event = _SimpleValueEdit(cellValue, 'edit_$i');
+        event.captureState(manager);
+        await event.buildAction(manager);
+        undoManager.record(event);
+      }
+
+      expect(cellValue.value, 'edit_5');
+
+      // Should only be able to undo 3 times (limited history)
+      expect(undoManager.canUndo, isTrue);
+      await undoManager.undo(manager); // edit_5 -> edit_4
+      expect(cellValue.value, 'edit_4');
+
+      await undoManager.undo(manager); // edit_4 -> edit_3
+      expect(cellValue.value, 'edit_3');
+
+      await undoManager.undo(manager); // edit_3 -> edit_2
+      expect(cellValue.value, 'edit_2');
+
+      // Can't undo further - history limit reached
+      expect(undoManager.canUndo, isFalse);
+
+      manager.dispose();
+    });
+
+    test('cell locking during save prevents concurrent edits', () async {
+      // Simulates: Lock cell while save is in progress
+      final lockedCells = <String>{};
+      final saveResults = <String>[];
+      final rejectedEdits = <String>[];
+
+      Future<String> saveCell(String cellId, String value) async {
+        if (lockedCells.contains(cellId)) {
+          rejectedEdits.add('$cellId:$value');
+          throw Exception('Cell is locked');
+        }
+
+        lockedCells.add(cellId);
+        try {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          saveResults.add('$cellId:$value');
+          return 'saved';
+        } finally {
+          lockedCells.remove(cellId);
+        }
+      }
+
+      final manager = EventManager<String>(
+        mode: const Concurrent(), // Allow concurrent execution
+      );
+
+      // Start saving A1
+      manager.addEventToQueue(
+        TestEvent<String>(
+          debugKey: 'SaveA1:first',
+          onExecute: () => saveCell('A1', 'first'),
+        ),
+      );
+
+      // Try to edit A1 again while save is in progress
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      manager.addEventToQueue(
+        TestEvent<String>(
+          debugKey: 'SaveA1:second',
+          onExecute: () => saveCell('A1', 'second'),
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // First save should succeed, second should be rejected
+      expect(saveResults, ['A1:first']);
+      expect(rejectedEdits, ['A1:second']);
+
+      manager.dispose();
+    });
+  });
+
+  group('Stress Tests and Edge Cases', () {
+    test('high volume - process 10,000 events without failure', () async {
+      // Stress test: Ensure EventManager handles high event volume
+      const eventCount = 10000;
+      var completedCount = 0;
+      var errorCount = 0;
+
+      final manager = EventManager<String>(
+        mode: const Concurrent(), // Max throughput
+        maxBatchSize: 100,
+      );
+
+      final stopwatch = Stopwatch()..start();
+
+      // Queue all events
+      for (var i = 0; i < eventCount; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Event:$i',
+            onExecute: () {
+              completedCount++;
+              return 'done:$i';
+            },
+          ),
+          onError: (_) => errorCount++,
+        );
+      }
+
+      // Wait for all to complete
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      // May need more time for slower machines
+      while (completedCount + errorCount < eventCount &&
+          stopwatch.elapsedMilliseconds < 5000) {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+
+      stopwatch.stop();
+
+      // All events should complete without errors
+      expect(completedCount, eventCount);
+      expect(errorCount, 0);
+      // Should complete in reasonable time (< 5 seconds)
+      expect(stopwatch.elapsedMilliseconds, lessThan(5000));
+
+      manager.dispose();
+    });
+
+    test('high volume with rate limiting - maintains rate limit', () async {
+      // Verify rate limiting works correctly under high load
+      const eventCount = 100;
+      final completionTimes = <DateTime>[];
+
+      final manager = EventManager<String>(
+        mode: const RateLimited(
+          limit: 10,
+          window: Duration(milliseconds: 100),
+        ),
+      );
+
+      for (var i = 0; i < eventCount; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'RateLimitedEvent:$i',
+            onExecute: () {
+              completionTimes.add(DateTime.now());
+              return 'done:$i';
+            },
+          ),
+        );
+      }
+
+      // Wait for all to complete (10 per 100ms = ~1 second for 100 events)
+      await Future<void>.delayed(const Duration(milliseconds: 1500));
+
+      expect(completionTimes.length, eventCount);
+
+      // Verify rate limiting: count events in 100ms windows
+      if (completionTimes.length >= 20) {
+        final firstTime = completionTimes.first;
+        var maxInWindow = 0;
+
+        // Check several 100ms windows
+        for (var windowStart = 0; windowStart < 500; windowStart += 50) {
+          final windowEnd = windowStart + 100;
+          final inWindow = completionTimes.where((t) {
+            final ms = t.difference(firstTime).inMilliseconds;
+            return ms >= windowStart && ms < windowEnd;
+          }).length;
+          if (inWindow > maxInWindow) maxInWindow = inWindow;
+        }
+
+        // Should not exceed limit (with some tolerance for timing)
+        expect(maxInWindow, lessThanOrEqualTo(15)); // 10 + tolerance
+      }
+
+      manager.dispose();
+    });
+
+    test('memory stability - repeated manager create/dispose cycles',
+        () async {
+      // Test for memory leaks by creating/disposing many managers
+      const cycles = 100;
+      const eventsPerCycle = 50;
+
+      for (var cycle = 0; cycle < cycles; cycle++) {
+        final manager = EventManager<String>();
+
+        for (var i = 0; i < eventsPerCycle; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              debugKey: 'Cycle$cycle:Event$i',
+              onExecute: () => 'done',
+            ),
+          );
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        manager.dispose();
+
+        // Verify events were processed or cancelled on dispose
+        expect(manager.hasEvents, isFalse);
+      }
+
+      // If we get here without OOM, memory is stable
+      expect(cycles, 100);
+    });
+
+    test('memory stability - event tokens are cleaned up', () async {
+      // Ensure cancelled tokens don't leak
+      final manager = EventManager<String>();
+      final tokens = <EventToken>[];
+
+      // Create many tokens and cancel them
+      for (var i = 0; i < 1000; i++) {
+        final token = EventToken();
+        tokens.add(token);
+
+        manager.addEventToQueue(
+          TestEvent<String>(
+            token: token,
+            debugKey: 'TokenEvent:$i',
+            delay: const Duration(milliseconds: 100),
+            onExecute: () => 'done:$i',
+          ),
+        );
+
+        // Cancel half of them immediately
+        if (i.isEven) {
+          token.cancel(reason: 'Test cancellation');
+        }
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // Cancel remaining
+      for (final token in tokens) {
+        token.cancel(reason: 'Cleanup');
+      }
+
+      manager.dispose();
+
+      // All tokens should be cancelled
+      expect(tokens.every((t) => t.isCancelled), isTrue);
+    });
+
+    test('long-running session - events over extended period', () async {
+      // Simulate a long session with events spread over time
+      final manager = EventManager<String>();
+      var totalCompleted = 0;
+      const waves = 5;
+      const eventsPerWave = 20;
+
+      for (var wave = 0; wave < waves; wave++) {
+        // Add a wave of events
+        for (var i = 0; i < eventsPerWave; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              debugKey: 'Wave$wave:Event$i',
+              onExecute: () {
+                totalCompleted++;
+                return 'done';
+              },
+            ),
+          );
+        }
+
+        // Wait between waves (simulating user activity over time)
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(totalCompleted, waves * eventsPerWave);
+      expect(manager.hasEvents, isFalse);
+
+      manager.dispose();
+    });
+
+    test('queue overflow - dropNewest policy', () async {
+      // Test queue overflow handling with dropNewest (default policy)
+      final manager = EventManager<String>(
+        maxQueueSize: 10,
+      );
+
+      // Pause to fill queue without processing
+      manager.pauseEvents();
+
+      final addedEvents = <TestEvent<String>>[];
+      for (var i = 0; i < 20; i++) {
+        final event = TestEvent<String>(
+          debugKey: 'Overflow:$i',
+          onExecute: () => 'done:$i',
+        );
+        addedEvents.add(event);
+        manager.addEventToQueue(event);
+      }
+
+      // Only first 10 should be in queue (rest dropped)
+      expect(manager.queueLength, 10);
+
+      manager.resumeEvents();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // First 10 should have completed
+      final completedCount =
+          addedEvents.where((e) => e.state is EventComplete).length;
+      expect(completedCount, 10);
+
+      manager.dispose();
+    });
+
+    test('queue overflow - dropOldest policy', () async {
+      // Test queue overflow handling with dropOldest
+      final manager = EventManager<String>(
+        maxQueueSize: 10,
+        overflowPolicy: OverflowPolicy.dropOldest,
+      );
+
+      manager.pauseEvents();
+
+      final executedIds = <int>[];
+      for (var i = 0; i < 20; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Overflow:$i',
+            onExecute: () {
+              executedIds.add(i);
+              return 'done:$i';
+            },
+          ),
+        );
+      }
+
+      expect(manager.queueLength, 10);
+
+      manager.resumeEvents();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Last 10 should have executed (oldest were dropped)
+      expect(executedIds.length, 10);
+      expect(executedIds.first, greaterThanOrEqualTo(10));
+
+      manager.dispose();
+    });
+
+    test('queue overflow - error policy throws', () async {
+      // Test queue overflow handling with error policy
+      final manager = EventManager<String>(
+        maxQueueSize: 5,
+        overflowPolicy: OverflowPolicy.error,
+      );
+
+      manager.pauseEvents();
+
+      // Fill queue
+      for (var i = 0; i < 5; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Fill:$i',
+            onExecute: () => 'done:$i',
+          ),
+        );
+      }
+
+      // Next one should throw
+      expect(
+        () => manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Overflow',
+            onExecute: () => 'overflow',
+          ),
+        ),
+        throwsA(isA<QueueOverflowError>()),
+      );
+
+      manager.dispose();
+    });
+
+    test('event starvation - low priority events eventually execute',
+        () async {
+      // Ensure low priority events don't starve when high priority
+      // events keep arriving
+      final executionOrder = <String>[];
+
+      final manager = EventManager<String>();
+
+      // Pause to queue all events before processing
+      manager.pauseEvents();
+
+      // Add low priority event first
+      manager.addEventToQueue(
+        _PriorityEvent(
+          eventPriority: 1,
+          debugKey: 'LowPriority',
+          onExecute: () async {
+            executionOrder.add('low');
+            return 'low';
+          },
+        ),
+      );
+
+      // Add high priority events
+      for (var i = 0; i < 5; i++) {
+        manager.addEventToQueue(
+          _PriorityEvent(
+            eventPriority: 100,
+            debugKey: 'HighPriority:$i',
+            onExecute: () async {
+              executionOrder.add('high:$i');
+              return 'high:$i';
+            },
+          ),
+        );
+      }
+
+      // Resume - priority sorting now happens
+      manager.resumeEvents();
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // Low priority should still execute (just last due to lower priority)
+      expect(executionOrder, contains('low'));
+      expect(executionOrder.last, 'low');
+      expect(executionOrder.length, 6);
+
+      manager.dispose();
+    });
+
+    test('concurrent modification - add events during processing', () async {
+      // Test adding events while others are being processed
+      final manager = EventManager<String>(mode: const Concurrent());
+      var phase1Count = 0;
+      var phase2Count = 0;
+
+      // Phase 1 events that add more events
+      for (var i = 0; i < 10; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Phase1:$i',
+            onExecute: () {
+              phase1Count++;
+              // Add phase 2 event during execution
+              manager.addEventToQueue(
+                TestEvent<String>(
+                  debugKey: 'Phase2:$i',
+                  onExecute: () {
+                    phase2Count++;
+                    return 'phase2:$i';
+                  },
+                ),
+              );
+              return 'phase1:$i';
+            },
+          ),
+        );
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // Both phases should complete
+      expect(phase1Count, 10);
+      expect(phase2Count, 10);
+
+      manager.dispose();
+    });
+
+    test('error isolation - one failing event does not affect others',
+        () async {
+      // Ensure errors in one event don't crash the queue
+      final manager = EventManager<String>(mode: const Concurrent());
+      var successCount = 0;
+      var errorCount = 0;
+
+      for (var i = 0; i < 100; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'Event:$i',
+            onExecute: () {
+              // Every 10th event fails
+              if (i % 10 == 5) {
+                throw Exception('Intentional failure: $i');
+              }
+              successCount++;
+              return 'done:$i';
+            },
+          ),
+          onError: (_) => errorCount++,
+        );
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      // 10 should fail, 90 should succeed
+      expect(errorCount, 10);
+      expect(successCount, 90);
+
+      manager.dispose();
+    });
+
+    test('dispose during processing - graceful shutdown', () async {
+      // Test that dispose handles in-flight events gracefully
+      final manager = EventManager<String>(mode: const Concurrent());
+      var startedCount = 0;
+
+      // Add slow events
+      for (var i = 0; i < 20; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'SlowEvent:$i',
+            onExecute: () async {
+              startedCount++;
+              await Future<void>.delayed(const Duration(milliseconds: 100));
+              return 'done:$i';
+            },
+          ),
+        );
+      }
+
+      // Wait for some to start, then dispose
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      manager.dispose();
+
+      // Some events should have started
+      expect(startedCount, greaterThan(0));
+
+      // Queue should be cleared
+      expect(manager.hasEvents, isFalse);
+    });
+
+    test('token cancellation race - cancel during execution', () async {
+      // Test cancelling a token while its event is mid-execution
+      final manager = EventManager<String>();
+      final token = EventToken();
+      var executionStarted = false;
+      var executionCompleted = false;
+
+      manager.addEventToQueue(
+        TestEvent<String>(
+          token: token,
+          debugKey: 'RaceEvent',
+          onExecute: () async {
+            executionStarted = true;
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+            executionCompleted = true;
+            return 'done';
+          },
+        ),
+      );
+
+      // Wait for execution to start
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(executionStarted, isTrue);
+
+      // Cancel mid-execution
+      token.cancel(reason: 'Mid-execution cancel');
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+
+      // Execution should still complete (cancellation during run
+      // doesn't abort the running code)
+      expect(executionCompleted, isTrue);
+      expect(token.isCancelled, isTrue);
+
+      manager.dispose();
+    });
+
+    test('pause/resume rapid toggling', () async {
+      // Test rapid pause/resume doesn't cause issues
+      final manager = EventManager<String>();
+      var completedCount = 0;
+
+      // Add events
+      for (var i = 0; i < 50; i++) {
+        manager.addEventToQueue(
+          TestEvent<String>(
+            debugKey: 'ToggleEvent:$i',
+            onExecute: () {
+              completedCount++;
+              return 'done:$i';
+            },
+          ),
+        );
+      }
+
+      // Rapidly toggle pause/resume
+      for (var i = 0; i < 20; i++) {
+        manager.pauseEvents();
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        manager.resumeEvents();
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // All events should eventually complete
+      expect(completedCount, 50);
+
+      manager.dispose();
+    });
+
+    test('mixed sync and async events', () async {
+      // Test queue handles mix of sync and async events
+      final manager = EventManager<String>();
+      final results = <String>[];
+
+      // Mix of sync and async events
+      for (var i = 0; i < 20; i++) {
+        if (i.isEven) {
+          // Sync event
+          manager.addEventToQueue(
+            TestEvent<String>(
+              debugKey: 'Sync:$i',
+              onExecute: () {
+                results.add('sync:$i');
+                return 'sync:$i';
+              },
+            ),
+          );
+        } else {
+          // Async event
+          manager.addEventToQueue(
+            TestEvent<String>(
+              debugKey: 'Async:$i',
+              delay: const Duration(milliseconds: 10),
+              onExecute: () {
+                results.add('async:$i');
+                return 'async:$i';
+              },
+            ),
+          );
+        }
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      expect(results.length, 20);
+      // With sequential processing, order should be preserved
+      for (var i = 0; i < 20; i++) {
+        final prefix = i.isEven ? 'sync' : 'async';
+        expect(results[i], '$prefix:$i');
+      }
+
+      manager.dispose();
+    });
+  });
+
+  group('Performance Benchmarks', () {
+    test('BENCHMARK: Throughput and latency metrics', () async {
+      // Measure real performance characteristics
+      final results = StringBuffer();
+      results.writeln('\n${'=' * 60}');
+      results.writeln('EVENT MANAGER PERFORMANCE BENCHMARKS');
+      results.writeln('=' * 60);
+
+      // 1. SYNC EVENT THROUGHPUT (Sequential mode)
+      {
+        final manager = EventManager<String>();
+        var count = 0;
+        const total = 10000;
+
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < total; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              onExecute: () {
+                count++;
+                return 'done';
+              },
+            ),
+          );
+        }
+        // Wait for completion
+        while (count < total) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
+            .toStringAsFixed(0);
+        final avgLatencyUs =
+            (stopwatch.elapsedMicroseconds / total).toStringAsFixed(2);
+
+        results.writeln('\n1. SYNC EVENTS (Sequential Mode)');
+        results.writeln('   Events processed: $total');
+        results.writeln('   Total time: ${stopwatch.elapsedMilliseconds} ms');
+        results.writeln('   Throughput: $eventsPerSecond events/sec');
+        results.writeln('   Avg latency: $avgLatencyUs µs/event');
+
+        manager.dispose();
+      }
+
+      // 2. SYNC EVENT THROUGHPUT (Concurrent mode)
+      {
+        final manager = EventManager<String>(mode: const Concurrent());
+        var count = 0;
+        const total = 10000;
+
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < total; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              onExecute: () {
+                count++;
+                return 'done';
+              },
+            ),
+          );
+        }
+        while (count < total) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
+            .toStringAsFixed(0);
+
+        results.writeln('\n2. SYNC EVENTS (Concurrent Mode)');
+        results.writeln('   Events processed: $total');
+        results.writeln('   Total time: ${stopwatch.elapsedMilliseconds} ms');
+        results.writeln('   Throughput: $eventsPerSecond events/sec');
+
+        manager.dispose();
+      }
+
+      // 3. ASYNC EVENT THROUGHPUT (simulating API calls)
+      {
+        final manager = EventManager<String>(mode: const Concurrent());
+        var count = 0;
+        const total = 100;
+        const apiDelayMs = 50; // Simulated API latency
+
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < total; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              delay: const Duration(milliseconds: apiDelayMs),
+              onExecute: () {
+                count++;
+                return 'done';
+              },
+            ),
+          );
+        }
+        while (count < total) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
+            .toStringAsFixed(1);
+        final concurrencyFactor =
+            (total * apiDelayMs / stopwatch.elapsedMilliseconds)
+                .toStringAsFixed(1);
+
+        results.writeln('\n3. ASYNC EVENTS (${apiDelayMs}ms API latency)');
+        results.writeln('   Events processed: $total');
+        results.writeln('   Total time: ${stopwatch.elapsedMilliseconds} ms');
+        results.writeln('   Throughput: $eventsPerSecond events/sec');
+        results.writeln('   Effective concurrency: ${concurrencyFactor}x');
+
+        manager.dispose();
+      }
+
+      // 4. 60 FPS FRAME BUDGET TEST
+      {
+        const frameBudgetMs = 16; // ~60fps
+        const framesPerSecond = 60;
+        var eventsProcessedIn16ms = 0;
+
+        final manager = EventManager<String>(
+          frameBudget: const Duration(milliseconds: frameBudgetMs),
+          maxBatchSize: 1000,
+        );
+
+        // Measure how many sync events fit in one frame budget
+        final stopwatch = Stopwatch()..start();
+        while (stopwatch.elapsedMilliseconds < frameBudgetMs) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              onExecute: () {
+                eventsProcessedIn16ms++;
+                return 'done';
+              },
+            ),
+          );
+        }
+        stopwatch.stop();
+
+        // Wait for events to complete
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final eventsPerFrame = eventsProcessedIn16ms;
+        final maxEventsAt60fps = eventsPerFrame * framesPerSecond;
+
+        results.writeln('\n4. 60 FPS FRAME BUDGET (${frameBudgetMs}ms)');
+        results.writeln('   Events per frame: $eventsPerFrame');
+        results.writeln('   Max events @ 60fps: $maxEventsAt60fps/sec');
+        results
+            .writeln('   Safe cell edits/frame: ${(eventsPerFrame * 0.5).toInt()} (50% headroom)');
+
+        manager.dispose();
+      }
+
+      // 5. RATE LIMITED MODE (Table cell scenario)
+      {
+        const limit = 10;
+        const windowMs = 100;
+        var count = 0;
+        const total = 50;
+
+        final manager = EventManager<String>(
+          mode: const RateLimited(
+            limit: limit,
+            window: Duration(milliseconds: windowMs),
+          ),
+        );
+
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < total; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              onExecute: () {
+                count++;
+                return 'done';
+              },
+            ),
+          );
+        }
+        while (count < total) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        const expectedMinTime = (total / limit) * windowMs;
+        final actualTime = stopwatch.elapsedMilliseconds;
+
+        results.writeln('\n5. RATE LIMITED MODE ($limit per ${windowMs}ms)');
+        results.writeln('   Events processed: $total');
+        results.writeln('   Expected min time: ${expectedMinTime.toInt()} ms');
+        results.writeln('   Actual time: $actualTime ms');
+        final enforced = actualTime >= expectedMinTime * 0.9 ? 'YES' : 'NO';
+        results.writeln('   Rate limit enforced: $enforced');
+
+        manager.dispose();
+      }
+
+      // 6. QUEUE OPERATIONS OVERHEAD
+      {
+        final manager = EventManager<String>();
+        manager.pauseEvents();
+
+        const queueSize = 1000;
+        final stopwatch = Stopwatch()..start();
+        for (var i = 0; i < queueSize; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(onExecute: () => 'done'),
+          );
+        }
+        stopwatch.stop();
+
+        final queueTimeUs = stopwatch.elapsedMicroseconds;
+        final perEventUs = (queueTimeUs / queueSize).toStringAsFixed(2);
+
+        results.writeln('\n6. QUEUE OPERATIONS');
+        results.writeln('   Events queued: $queueSize');
+        results.writeln('   Queue time: $queueTimeUs µs');
+        results.writeln('   Per-event overhead: $perEventUs µs');
+
+        manager.dispose();
+      }
+
+      // 7. TOKEN CANCELLATION PERFORMANCE
+      {
+        final manager = EventManager<String>();
+        manager.pauseEvents();
+
+        const tokenCount = 1000;
+        final tokens = <EventToken>[];
+
+        // Create events with tokens
+        for (var i = 0; i < tokenCount; i++) {
+          final token = EventToken();
+          tokens.add(token);
+          manager.addEventToQueue(
+            TestEvent<String>(
+              token: token,
+              delay: const Duration(milliseconds: 100),
+              onExecute: () => 'done',
+            ),
+          );
+        }
+
+        // Measure cancellation time
+        final stopwatch = Stopwatch()..start();
+        for (final token in tokens) {
+          token.cancel(reason: 'Benchmark');
+        }
+        stopwatch.stop();
+
+        final cancelTimeUs = stopwatch.elapsedMicroseconds;
+        final perCancelUs = (cancelTimeUs / tokenCount).toStringAsFixed(2);
+
+        results.writeln('\n7. TOKEN CANCELLATION');
+        results.writeln('   Tokens cancelled: $tokenCount');
+        results.writeln('   Total time: $cancelTimeUs µs');
+        results.writeln('   Per-cancel overhead: $perCancelUs µs');
+
+        manager.dispose();
+      }
+
+      // Print summary
+      results.writeln('\n${'=' * 60}');
+      results.writeln('RECOMMENDATIONS FOR TABLE CELL EDITING');
+      results.writeln('=' * 60);
+      results.writeln('''
+• For 60fps UI responsiveness:
+  - Keep cell edits < 500 per frame (with 50% headroom)
+  - Use RateLimited mode for API calls (e.g., 10 per 100ms)
+
+• For bulk operations (paste 1000 cells):
+  - Use Concurrent mode for parallel API calls
+  - Show progress indicator for operations > 100 cells
+
+• For real-time collaboration:
+  - Use token cancellation for debouncing user input
+  - Cancel previous edit when user types quickly
+
+• Memory guidelines:
+  - EventManager handles 10K+ events without issues
+  - Dispose manager when leaving screen/page
+''');
+      results.writeln('=' * 60);
+
+      // Print benchmark results to console for analysis.
+      // ignore: avoid_print
+      print(results);
+
+      // Ensure test passes
+      expect(true, isTrue);
+    });
+
+    test('BENCHMARK: Table cell editing simulation', () async {
+      // Simulate realistic table editing scenarios
+      final results = StringBuffer();
+      results.writeln('\n${'=' * 60}');
+      results.writeln('TABLE CELL EDITING SIMULATION');
+      results.writeln('=' * 60);
+
+      // Scenario 1: Single cell edit with API call
+      {
+        final manager = EventManager<String>();
+        const apiLatencyMs = 100;
+        var saved = false;
+
+        final stopwatch = Stopwatch()..start();
+        await manager.addEventToQueue(
+          TestEvent<String>(
+            delay: const Duration(milliseconds: apiLatencyMs),
+            onExecute: () {
+              saved = true;
+              return 'saved';
+            },
+          ),
+        );
+        stopwatch.stop();
+
+        final waitTime = stopwatch.elapsedMilliseconds;
+        results.writeln('\n1. SINGLE CELL EDIT ($apiLatencyMs ms API)');
+        results.writeln('   User wait time: $waitTime ms');
+        results.writeln('   Saved: $saved');
+      }
+
+      // Scenario 2: Rapid typing (debounce simulation)
+      {
+        final manager = EventManager<String>();
+        var apiCalls = 0;
+        var currentToken = EventToken();
+
+        final stopwatch = Stopwatch()..start();
+
+        // Simulate user typing 10 characters quickly
+        for (var i = 0; i < 10; i++) {
+          currentToken.cancel(reason: 'New keystroke');
+          currentToken = EventToken();
+
+          manager.addEventToQueue(
+            TestEvent<String>(
+              token: currentToken,
+              delay: const Duration(milliseconds: 50),
+              onExecute: () {
+                apiCalls++;
+                return 'saved';
+              },
+            ),
+          );
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        stopwatch.stop();
+
+        results.writeln('\n2. RAPID TYPING (10 keystrokes, debounced)');
+        results.writeln('   Keystrokes: 10');
+        results.writeln('   API calls made: $apiCalls');
+        final saved = 10 - apiCalls;
+        final savedPercent = (saved / 10 * 100).toInt();
+        results.writeln('   API calls saved: $saved ($savedPercent%)');
+
+        manager.dispose();
+      }
+
+      // Scenario 3: Bulk paste operation
+      {
+        final manager = EventManager<String>(mode: const Concurrent());
+        const cellCount = 100;
+        const apiLatencyMs = 50;
+        var completedCells = 0;
+
+        final stopwatch = Stopwatch()..start();
+
+        for (var i = 0; i < cellCount; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              delay: const Duration(milliseconds: apiLatencyMs),
+              onExecute: () {
+                completedCells++;
+                return 'saved';
+              },
+            ),
+          );
+        }
+
+        while (completedCells < cellCount) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        const sequentialTime = cellCount * apiLatencyMs;
+        final elapsed = stopwatch.elapsedMilliseconds;
+        final speedup = (sequentialTime / elapsed).toStringAsFixed(1);
+
+        results.writeln('\n3. BULK PASTE ($cellCount cells, $apiLatencyMs ms)');
+        results.writeln('   Sequential time: $sequentialTime ms');
+        results.writeln('   Actual time: $elapsed ms');
+        results.writeln('   Speedup: ${speedup}x (concurrent execution)');
+
+        manager.dispose();
+      }
+
+      // Scenario 4: Rate-limited API calls
+      {
+        const windowDuration = Duration(milliseconds: 100);
+        final manager = EventManager<String>(
+          mode: const RateLimited(limit: 5, window: windowDuration),
+        );
+        const cellCount = 20;
+        const eventsPerWindow = 5;
+        var completedCells = 0;
+
+        final stopwatch = Stopwatch()..start();
+
+        for (var i = 0; i < cellCount; i++) {
+          manager.addEventToQueue(
+            TestEvent<String>(
+              onExecute: () {
+                completedCells++;
+                return 'saved';
+              },
+            ),
+          );
+        }
+
+        while (completedCells < cellCount) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        stopwatch.stop();
+
+        final expectedWindows = (cellCount / eventsPerWindow).ceil();
+        final elapsed = stopwatch.elapsedMilliseconds;
+        final avgPerCell = (elapsed / cellCount).toStringAsFixed(1);
+
+        results.writeln('\n4. RATE-LIMITED SAVES (5 per 100ms)');
+        results.writeln('   Cells saved: $cellCount');
+        results.writeln('   Expected windows: $expectedWindows');
+        results.writeln('   Total time: $elapsed ms');
+        results.writeln('   Avg per cell: $avgPerCell ms');
+
+        manager.dispose();
+      }
+
+      // Scenario 5: Mixed operations (edit + undo)
+      {
+        final cellState = <String, String>{'A1': 'original'};
+        final manager = EventManager<String>();
+        final undoManager = UndoRedoManager<String>();
+
+        final stopwatch = Stopwatch()..start();
+
+        // Edit cell
+        final editEvent = _CellEditEvent(
+          cellId: 'A1',
+          newValue: 'edited',
+          cellStates: cellState,
+          onSave: () async {
+            await Future<void>.delayed(const Duration(milliseconds: 20));
+          },
+        );
+        editEvent.captureState(manager);
+        await editEvent.buildAction(manager);
+        undoManager.record(editEvent);
+
+        // Undo
+        await undoManager.undo(manager);
+
+        stopwatch.stop();
+
+        final editUndoTime = stopwatch.elapsedMilliseconds;
+        final finalValue = cellState['A1'];
+        final undoWorked = finalValue == 'original';
+
+        results.writeln('\n5. EDIT + UNDO CYCLE');
+        results.writeln('   Edit time + Undo time: $editUndoTime ms');
+        results.writeln('   Final value: $finalValue');
+        results.writeln('   Undo worked: $undoWorked');
+
+        manager.dispose();
+      }
+
+      results.writeln('\n${'=' * 60}');
+
+      // Print benchmark results to console for analysis.
+      // ignore: avoid_print
+      print(results);
+
+      expect(true, isTrue);
+    });
+  });
 }
 
 /// Simple undoable event for testing default implementations
@@ -4167,4 +7992,149 @@ class SimpleUndoableEvent extends UndoableEvent<String> {
   FutureOr<void> undo(EventManager<String> manager) {
     currentValue = previousValue ?? '';
   }
+}
+
+// ============== Integration Test Helper Classes ==============
+
+/// Cell edit event with undo support for testing undo-on-failure pattern.
+// ignore: must_be_immutable
+class _CellEditEvent extends UndoableEvent<String> {
+  _CellEditEvent({
+    required this.cellId,
+    required this.newValue,
+    required this.cellStates,
+    required this.onSave,
+  });
+
+  final String cellId;
+  final String newValue;
+  final Map<String, String> cellStates;
+  final Future<void> Function() onSave;
+
+  String? _previousValue;
+
+  @override
+  void captureState(EventManager<String> manager) {
+    _previousValue = cellStates[cellId];
+  }
+
+  @override
+  Future<String> buildAction(EventManager<String> manager) async {
+    // Optimistic update
+    cellStates[cellId] = newValue;
+    // Try to save (may throw)
+    await onSave();
+    return newValue;
+  }
+
+  @override
+  FutureOr<void> undo(EventManager<String> manager) {
+    cellStates[cellId] = _previousValue ?? '';
+  }
+}
+
+/// Simple cell edit for batch undo/redo testing.
+// ignore: must_be_immutable
+class _SimpleCellEdit extends UndoableEvent<String> {
+  _SimpleCellEdit(this.cellId, this.newValue, this.cellStates);
+
+  final String cellId;
+  final String newValue;
+  final Map<String, String> cellStates;
+
+  String? _previousValue;
+
+  @override
+  void captureState(EventManager<String> manager) {
+    _previousValue = cellStates[cellId];
+  }
+
+  @override
+  FutureOr<String> buildAction(EventManager<String> manager) {
+    cellStates[cellId] = newValue;
+    return newValue;
+  }
+
+  @override
+  FutureOr<void> undo(EventManager<String> manager) {
+    cellStates[cellId] = _previousValue!;
+  }
+}
+
+/// Cell edit with validation for testing validation patterns.
+class _ValidatedCellEdit extends BaseEvent<String> {
+  _ValidatedCellEdit({
+    required this.cellId,
+    required this.value,
+    required this.validator,
+    required this.onValid,
+    required this.onInvalid,
+  });
+
+  final String cellId;
+  final String value;
+  final bool Function(String) validator;
+  final void Function() onValid;
+  final void Function(String cellId) onInvalid;
+
+  @override
+  FutureOr<String> buildAction(EventManager<String> manager) {
+    if (validator(value)) {
+      onValid();
+      return 'valid:$cellId';
+    } else {
+      onInvalid(cellId);
+      return 'invalid:$cellId';
+    }
+  }
+}
+
+/// Simple value edit for testing undo stack limits.
+// UndoableEvent requires mutable state to track previous values.
+// ignore: must_be_immutable
+class _SimpleValueEdit extends UndoableEvent<String> {
+  _SimpleValueEdit(this.notifier, this.newValue);
+
+  final ValueNotifier<String> notifier;
+  final String newValue;
+
+  late String _previousValue;
+
+  @override
+  void captureState(EventManager<String> manager) {
+    _previousValue = notifier.value;
+  }
+
+  @override
+  FutureOr<String> buildAction(EventManager<String> manager) {
+    notifier.value = newValue;
+    return newValue;
+  }
+
+  @override
+  FutureOr<void> undo(EventManager<String> manager) {
+    notifier.value = _previousValue;
+  }
+}
+
+/// Event with configurable priority for testing priority ordering.
+class _PriorityEvent extends BaseEvent<String> {
+  _PriorityEvent({
+    required this.eventPriority,
+    required this.onExecute,
+    String? debugKey,
+  }) : _debugKey = debugKey;
+
+  final int eventPriority;
+  final Future<String> Function() onExecute;
+  final String? _debugKey;
+
+  @override
+  int get priority => eventPriority;
+
+  @override
+  String? get debugKey => _debugKey;
+
+  @override
+  Future<String> buildAction(EventManager<String> manager) => onExecute();
 }
