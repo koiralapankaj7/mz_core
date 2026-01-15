@@ -9,7 +9,7 @@
 /// 1. Add to pubspec.yaml:
 ///    ```yaml
 ///    dev_dependencies:
-///      mz_lints: ^0.0.1
+///      mz_lints: ^0.1.0
 ///    ```
 ///
 /// 2. Add to analysis_options.yaml:

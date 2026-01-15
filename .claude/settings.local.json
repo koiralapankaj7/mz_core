@@ -41,7 +41,17 @@
       "Bash(docker run:*)",
       "Bash(dart --version:*)",
       "Bash(dart pub get:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebSearch",
+      "Bash(flutter analyze:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(flutter doctor:*)",
+      "Bash(git -C /Users/Pankaj/Development/mz_core status --short lib/src/controller.dart lib/src/controller_lite.dart lib/src/event_manager.dart)",
+      "Bash(if [ -f coverage/lcov.info ])",
+      "Bash(then echo \"Coverage file generated\")",
+      "Bash(fi)",
+      "Bash(pkill:*)"
     ]
   }
 }

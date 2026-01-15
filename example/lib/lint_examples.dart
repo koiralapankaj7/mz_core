@@ -1,5 +1,4 @@
-// ignore_for_file: unused_field, unused_element
-// ignore_for_file: dispose_notifier, remove_listener, controller_listen_in_callback
+// ignore_for_file: controller_listen_in_callback, duplicate_listener, remove_listener, dispose_notifier, unused_field, unused_element
 
 import 'package:flutter/material.dart';
 import 'package:mz_core/mz_core.dart';
@@ -108,6 +107,137 @@ class _GoodListenerExampleState extends State<GoodListenerExample> {
   @override
   void initState() {
     super.initState();
+    widget.counter.addListener(_onCounterChanged); // OK
+  }
+
+  @override
+  void dispose() {
+    widget.counter.removeListener(_onCounterChanged);
+    super.dispose();
+  }
+
+  void _onCounterChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Count: ${widget.counter.value}');
+  }
+}
+
+// =============================================================================
+// RULE: duplicate_listener
+// =============================================================================
+
+/// BAD: Same listener added multiple times across methods.
+/// The lint analyzes the call graph to detect that _add() is called
+/// from initState, causing the same listener to be added twice.
+/// The second addListener in _add() is flagged as a duplicate.
+class BadDuplicateListenerExample extends StatefulWidget {
+  final ValueNotifier<int> counter;
+
+  const BadDuplicateListenerExample({super.key, required this.counter});
+
+  @override
+  State<BadDuplicateListenerExample> createState() =>
+      _BadDuplicateListenerExampleState();
+}
+
+class _BadDuplicateListenerExampleState
+    extends State<BadDuplicateListenerExample> {
+  @override
+  void initState() {
+    super.initState();
+    widget.counter.addListener(_onCounterChanged); // count = 1
+    _add(); // LINT: duplicate - calls addListener again making count = 2
+  }
+
+  void _remove() {
+    widget.counter.removeListener(_onCounterChanged);
+  }
+
+  void _add() {
+    // This addListener will be flagged as duplicate
+    widget.counter.addListener(_onCounterChanged);
+  }
+
+  @override
+  void dispose() {
+    _remove(); // Properly removes the listener
+    super.dispose();
+  }
+
+  void _onCounterChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Count: ${widget.counter.value}');
+  }
+}
+
+/// BAD: Listener added in didUpdateWidget without removing previous one.
+class BadDidUpdateWidgetExample extends StatefulWidget {
+  final ValueNotifier<int> counter;
+
+  const BadDidUpdateWidgetExample({super.key, required this.counter});
+
+  @override
+  State<BadDidUpdateWidgetExample> createState() =>
+      _BadDidUpdateWidgetExampleState();
+}
+
+class _BadDidUpdateWidgetExampleState extends State<BadDidUpdateWidgetExample> {
+  @override
+  void didUpdateWidget(BadDidUpdateWidgetExample oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // This should trigger duplicate_listener lint
+    // Missing: oldWidget.counter.removeListener(_onCounterChanged);
+    widget.counter.addListener(_onCounterChanged); // LINT: no remove before add
+  }
+
+  @override
+  void dispose() {
+    widget.counter.removeListener(_onCounterChanged);
+    super.dispose();
+  }
+
+  void _onCounterChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text('Count: ${widget.counter.value}');
+  }
+}
+
+/// GOOD: Listener properly managed in didUpdateWidget.
+class GoodDidUpdateWidgetExample extends StatefulWidget {
+  final ValueNotifier<int> counter;
+
+  const GoodDidUpdateWidgetExample({super.key, required this.counter});
+
+  @override
+  State<GoodDidUpdateWidgetExample> createState() =>
+      _GoodDidUpdateWidgetExampleState();
+}
+
+class _GoodDidUpdateWidgetExampleState
+    extends State<GoodDidUpdateWidgetExample> {
+  @override
+  void initState() {
+    super.initState();
+    widget.counter.addListener(_onCounterChanged); // OK
+  }
+
+  @override
+  void didUpdateWidget(GoodDidUpdateWidgetExample oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // GOOD: Remove from old widget before adding to new widget
+    oldWidget.counter.removeListener(_onCounterChanged);
     widget.counter.addListener(_onCounterChanged); // OK
   }
 

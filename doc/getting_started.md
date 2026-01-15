@@ -8,7 +8,7 @@ Add mz_core to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_core: ^1.2.0
+  mz_core: ^1.3.0
 ```
 
 Run:
@@ -624,6 +624,107 @@ class ApiService {
 }
 ```
 
+### 9. Event Queue with EventManager
+
+For complex async operations with retry, cancellation, and undo/redo:
+
+```dart
+import 'package:mz_core/mz_core.dart';
+
+// Define an event
+class FetchDataEvent extends BaseEvent<MyAppState> {
+  FetchDataEvent(this.itemId);
+
+  final String itemId;
+
+  @override
+  Duration? get timeout => const Duration(seconds: 30);
+
+  @override
+  RetryPolicy? get retryPolicy => RetryPolicy(
+    maxAttempts: 3,
+    backoff: RetryBackoff.exponential(
+      initial: const Duration(seconds: 1),
+    ),
+  );
+
+  @override
+  Future<Data> buildAction(EventManager<MyAppState> manager) async {
+    reportProgress(0.0, message: 'Fetching...');
+    final data = await api.fetchData(itemId);
+    reportProgress(1.0, message: 'Done');
+    return data;
+  }
+}
+
+// Create manager and dispatch
+final manager = EventManager<MyAppState>();
+
+manager.addEventToQueue(
+  FetchDataEvent('123'),
+  onDone: (event, data) => print('Success: $data'),
+  onError: (error) => print('Error: $error'),
+);
+```
+
+### 10. Cancellable Operations with Tokens
+
+Group related events for collective cancellation:
+
+```dart
+final token = EventToken();
+
+// Add multiple events with same token
+manager.addEventToQueue(FetchDataEvent('1', token: token));
+manager.addEventToQueue(FetchDataEvent('2', token: token));
+
+// Cancel all events with this token
+token.cancel(reason: 'User cancelled');
+```
+
+### 11. Undo/Redo Support
+
+Create undoable events for user actions:
+
+```dart
+class UpdateTitleEvent extends UndoableEvent<MyAppState> {
+  UpdateTitleEvent(this.newTitle);
+
+  final String newTitle;
+  String? _previousTitle;
+
+  @override
+  void captureState(EventManager<MyAppState> manager) {
+    _previousTitle = manager.state.title;
+  }
+
+  @override
+  Future<void> buildAction(EventManager<MyAppState> manager) async {
+    manager.state.title = newTitle;
+  }
+
+  @override
+  Future<void> undo(EventManager<MyAppState> manager) async {
+    manager.state.title = _previousTitle!;
+  }
+
+  @override
+  String get undoDescription => 'Change title to "$newTitle"';
+}
+
+// Setup manager with undo support
+final manager = EventManager<MyAppState>(
+  undoManager: UndoRedoManager(maxHistorySize: 50),
+);
+
+// Dispatch undoable event
+manager.addEventToQueue(UpdateTitleEvent('New Title'));
+
+// Undo/redo
+await manager.undoManager?.undo(manager);
+await manager.undoManager?.redo(manager);
+```
+
 ## Tips
 
 - **Controllers**: Always call `dispose()` when done with controllers
@@ -633,6 +734,7 @@ class ApiService {
 - **Logging**: Use appropriate log levels (trace/debug for development, info/warning/error for production)
 - **Listenable Collections**: Remember to remove listeners in `dispose()`
 - **Auto-disposal**: Register cleanup functions immediately after creating resources
+- **EventManager**: Use tokens to group related events for cancellation; dispose manager when done
 
 ## FAQ
 

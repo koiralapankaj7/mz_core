@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Listener;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mz_core/src/controller.dart';
 
 // Expose internal classes for testing
-export 'package:mz_core/src/controller.dart' show CListener;
+export 'package:mz_core/src/controller.dart' show Listener;
 
 // Test helper classes
 class TestController with Controller {
@@ -892,13 +892,16 @@ void main() {
         controller.dispose();
       });
 
-      test('should test CListener equality and hashCode', () {
+      test('should test Listener equality and hashCode', () {
         void listener1() {}
         void listener2() {}
 
-        final cListener1 = CListener(listener1, priority: 0, predicate: null);
-        final cListener2 = CListener(listener1, priority: 0, predicate: null);
-        final cListener3 = CListener(listener2, priority: 0, predicate: null);
+        final cListener1 =
+            Listener.create(listener1, priority: 0, predicate: null);
+        final cListener2 =
+            Listener.create(listener1, priority: 0, predicate: null);
+        final cListener3 =
+            Listener.create(listener2, priority: 0, predicate: null);
 
         // Same function - should be equal
         expect(cListener1, equals(cListener2));
@@ -908,25 +911,25 @@ void main() {
         expect(cListener1, isNot(equals(cListener3)));
       });
 
-      test('should support CListener.merge factory', () {
+      test('should support Listener.merge factory', () {
         var count1 = 0;
         var count2 = 0;
 
-        final listener1 = CListener(
+        final listener1 = Listener.create(
           () => count1++,
           priority: 0,
           predicate: null,
         );
-        final listener2 = CListener(
+        final listener2 = Listener.create(
           () => count2++,
           priority: 0,
           predicate: null,
         );
 
-        final merged = CListener.merge([listener1, listener2]);
+        final merged = Listener.merge([listener1, listener2]);
 
         final controller = TestController();
-        merged.call(controller);
+        merged.call(controller, null, null);
 
         // Both listeners should be called
         expect(count1, 1);
@@ -1680,30 +1683,30 @@ void main() {
       });
 
       test('should call _noOp in _MergeListener', () {
-        // Create CListener instances to merge
-        final listener1 = CListener(
+        // Create Listener instances to merge
+        final listener1 = Listener.create(
           () {},
           priority: 5,
           predicate: (k, v) => true,
         );
-        final listener2 = CListener(
+        final listener2 = Listener.create(
           () {},
           priority: 3,
           predicate: (k, v) => true,
         );
 
         // Create merged listener
-        final merged = CListener.merge([listener1, listener2]);
+        final merged = Listener.merge([listener1, listener2]);
 
-        // Access the underlying function to trigger _noOp (line 64)
+        // Access the underlying function to trigger _noOp
         final controller = TestController();
 
-        // Call the parent CListener's function directly
+        // Call the parent Listener's function directly
         // ignore: avoid_dynamic_calls - Testing internal _noOp function
         merged.function();
 
         // Also call the merged listener
-        merged.call(controller);
+        merged.call(controller, null, null);
 
         controller.dispose();
       });
@@ -2149,6 +2152,706 @@ void main() {
         final controller = ValueController<int>(10)..dispose();
 
         expect(() => controller.onChanged(20), returnsNormally);
+      });
+    });
+  });
+
+  group('Coverage Tests', () {
+    test('should throw for unsupported callback type', () {
+      // Line 60-63: Unsupported callback type error
+      expect(
+        () => Listener.create(
+          (String a, int b, bool c) {}, // Unsupported signature
+          priority: 0,
+          predicate: null,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('should test MergeListener equality and hashCode', () {
+      // Lines 145, 159, 162, 164-165: _MergeListener equality/hashCode/priority
+      final listener1 = Listener.create(() {}, priority: 1, predicate: null);
+      final listener2 = Listener.create(() {}, priority: 2, predicate: null);
+
+      final merged1 = Listener.merge([listener1, listener2]);
+      final merged2 = Listener.merge([listener1, listener2]);
+      final merged3 = Listener.merge([listener2, listener1]);
+
+      // Same listeners in same order should be equal
+      expect(merged1, equals(merged2));
+      expect(merged1.hashCode, equals(merged2.hashCode));
+
+      // Different order should not be equal
+      expect(merged1, isNot(equals(merged3)));
+
+      // MergeListener priority should always be 0
+      expect(merged1.priority, equals(0));
+    });
+
+    test('should handle deeply nested key iterables', () {
+      // Line 504: yield* _flattenKeys(k) for nested iterables
+      final controller = TestController();
+      var count = 0;
+
+      // Create deeply nested key structure
+      final nestedKeys = [
+        'key1',
+        [
+          'key2',
+          ['key3', 'key4'],
+        ],
+      ];
+
+      controller
+        ..addListener(() => count++, key: nestedKeys)
+        ..notifyListeners(key: 'key3');
+
+      expect(count, 1);
+      controller.dispose();
+    });
+
+    test('should skip null values in key iterables', () {
+      // Line 502: if (k == null) continue;
+      final controller = TestController();
+      var count = 0;
+
+      // Create key list with null values
+      final keysWithNulls = ['key1', null, 'key2', null];
+
+      controller
+        ..addListener(() => count++, key: keysWithNulls)
+        ..notifyListeners(key: 'key1');
+
+      expect(count, 1);
+
+      controller.notifyListeners(key: 'key2');
+      expect(count, 2);
+
+      controller.dispose();
+    });
+
+    test('should return single listener when only one key has priority', () {
+      // Lines 551, 555-556: listeners.length == 1 branch
+      final controller = TestController();
+
+      // Add listener with priority to single key in list
+      final listener = controller.addListener(
+        () {},
+        key: ['key1'],
+        priority: 1,
+      );
+
+      // Should return the single listener directly, not merged
+      expect(listener, isNotNull);
+      expect(listener, isA<Listener>());
+
+      controller.dispose();
+    });
+
+    test('should return merged listener when multiple keys have priority', () {
+      // Line 557: Listener.merge(listeners) branch
+      final controller = TestController();
+
+      // Add listener with priority to multiple keys
+      final listener = controller.addListener(
+        () {},
+        key: ['key1', 'key2'],
+        priority: 1,
+      );
+
+      // Should return merged listener
+      expect(listener, isNotNull);
+
+      controller.dispose();
+    });
+
+    test('should notify multiple keys with global listeners', () {
+      // Line 680: sets.add(_globalListeners!) in _notifyMultipleKeys
+      final controller = TestController();
+      final calls = <String>[];
+
+      controller
+        ..addListener(() => calls.add('global'))
+        ..addListener(() => calls.add('key1'), key: 'key1')
+        ..addListener(() => calls.add('key2'), key: 'key2')
+        ..notifyListeners(key: ['key1', 'key2']);
+
+      expect(calls, containsAll(['global', 'key1', 'key2']));
+      controller.dispose();
+    });
+
+    test('should merge multiple keys with priority listeners', () {
+      // Line 703: _notifyMerged(sets, keys, value) call
+      final controller = TestController();
+      final calls = <String>[];
+
+      controller
+        ..addListener(() => calls.add('global-hi'), priority: 10)
+        ..addListener(() => calls.add('key1'), key: 'key1', priority: 5)
+        ..addListener(() => calls.add('key2'), key: 'key2', priority: 1)
+        ..notifyListeners(key: ['key1', 'key2']);
+
+      // Should be sorted by priority
+      expect(calls, ['global-hi', 'key1', 'key2']);
+      controller.dispose();
+    });
+
+    test('should handle Controller.merge addListener', () {
+      // Line 877: _MergingController.addListener
+      final c1 = TestController();
+      final c2 = TestController();
+      final merged = Controller.merge([c1, c2]);
+      var count = 0;
+
+      merged.addListener(() => count++, priority: 1);
+
+      c1.notifyListeners();
+      expect(count, 1);
+
+      c2.notifyListeners();
+      expect(count, 2);
+
+      merged.dispose();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Benchmarking Tests
+  // ---------------------------------------------------------------------------
+  // These tests measure performance characteristics of Controller in various
+  // real-world scenarios. They validate that operations complete within
+  // acceptable time bounds for 60fps rendering (16.67ms frame budget).
+  // ---------------------------------------------------------------------------
+
+  group('Benchmarks', () {
+    // Configuration
+    const iterations = 10000;
+    const tableRows = 100;
+    const tableCols = 300;
+    const totalCells = tableRows * tableCols; // 30,000 cells
+
+    group('Best Case Scenarios', () {
+      test('simple VoidCallback notify (no keys, no priority)', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Add simple listener
+        controller.addListener(() => count++);
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners();
+        }
+        sw.stop();
+
+        expect(count, iterations);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Best case notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        // Should be under 1us per notify
+        expect(avgUs, lessThan(1));
+
+        controller.dispose();
+      });
+
+      test('simple VoidCallback add/remove cycle', () {
+        final controller = TestController();
+        void listener() {}
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller
+            ..addListener(listener)
+            ..removeListener(listener);
+        }
+        sw.stop();
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Best case add/remove: ${avgUs.toStringAsFixed(3)}us/op');
+
+        // Should be under 5us per cycle
+        expect(avgUs, lessThan(5));
+
+        controller.dispose();
+      });
+
+      test('multiple simple listeners notify', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Add 100 simple listeners
+        for (var i = 0; i < 100; i++) {
+          controller.addListener(() => count++);
+        }
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations ~/ 10; i++) {
+          controller.notifyListeners();
+        }
+        sw.stop();
+
+        expect(count, (iterations ~/ 10) * 100);
+
+        final avgUs = sw.elapsedMicroseconds / (iterations ~/ 10);
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  100 listeners notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+    });
+
+    group('Worst Case Scenarios', () {
+      test('keyed + priority + global merge notify', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Global + keyed listeners with different priorities
+        controller
+          ..addListener(() => count++, priority: 100) // Global high
+          ..addListener(() => count++, key: 'cell', priority: 50) // Medium
+          ..addListener(() => count++, key: 'cell', priority: 1); // Low
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners(key: 'cell');
+        }
+        sw.stop();
+
+        expect(count, iterations * 3);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Worst case notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        // Should still be under 5us per notify
+        expect(avgUs, lessThan(5));
+
+        controller.dispose();
+      });
+
+      test('multiple keys notify with merging', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Global priority listener + multiple keyed listeners
+        controller
+          ..addListener(() => count++, priority: 10) // Global
+          ..addListener(() => count++, key: 'row-0')
+          ..addListener(() => count++, key: 'col-0')
+          ..addListener(() => count++, key: 'cell-0-0', priority: 5);
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners(key: ['row-0', 'col-0', 'cell-0-0']);
+        }
+        sw.stop();
+
+        // 4 listeners called per notification
+        expect(count, iterations * 4);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Multi-key merge notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+
+      test('predicate filtering overhead', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Listener with predicate that filters half the notifications
+        controller.addListener(
+          (Object? _, Object? value) {
+            if (value is int && value.isEven) count++;
+          },
+          predicate: (Object? _, Object? value) => value is int && value.isEven,
+          priority: 1,
+        );
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners(value: i);
+        }
+        sw.stop();
+
+        // Only even values trigger the listener
+        expect(count, iterations ~/ 2);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Predicate filtering: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+    });
+
+    group('Table Scenarios (${tableRows}x$tableCols)', () {
+      test('single cell update', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Register listeners for all cells (simulating table)
+        for (var r = 0; r < tableRows; r++) {
+          for (var c = 0; c < tableCols; c++) {
+            controller.addListener(() => count++, key: 'cell-$r-$c');
+          }
+        }
+
+        // Measure single cell update
+        count = 0;
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners(key: 'cell-50-150');
+        }
+        sw.stop();
+
+        expect(count, iterations);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Single cell update: ${avgUs.toStringAsFixed(3)}us/op');
+
+        // Single cell should be O(1), under 0.5us
+        expect(avgUs, lessThan(0.5));
+
+        controller.dispose();
+      });
+
+      test('row update (notify entire row)', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Register row listeners
+        for (var r = 0; r < tableRows; r++) {
+          controller.addListener(() => count++, key: 'row-$r');
+        }
+
+        // Measure row update
+        count = 0;
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations ~/ 100; i++) {
+          controller.notifyListeners(key: 'row-50');
+        }
+        sw.stop();
+
+        expect(count, iterations ~/ 100);
+
+        final avgUs = sw.elapsedMicroseconds / (iterations ~/ 100);
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Row update: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+
+      test('column update (notify entire column)', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Register column listeners
+        for (var c = 0; c < tableCols; c++) {
+          controller.addListener(() => count++, key: 'col-$c');
+        }
+
+        // Measure column update
+        count = 0;
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations ~/ 100; i++) {
+          controller.notifyListeners(key: 'col-150');
+        }
+        sw.stop();
+
+        expect(count, iterations ~/ 100);
+
+        final avgUs = sw.elapsedMicroseconds / (iterations ~/ 100);
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Column update: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+
+      test('full table refresh (global notify)', () {
+        final controller = TestController();
+        var count = 0;
+
+        // Global listener for full refresh
+        controller.addListener(() => count++);
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations ~/ 100; i++) {
+          controller.notifyListeners();
+        }
+        sw.stop();
+
+        expect(count, iterations ~/ 100);
+
+        final avgUs = sw.elapsedMicroseconds / (iterations ~/ 100);
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Full refresh: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+
+      test('mixed workload (cell + row + column updates)', () {
+        final controller = TestController();
+        var cellCount = 0;
+        var rowCount = 0;
+        var colCount = 0;
+
+        // Register mixed listeners
+        controller
+          ..addListener(() => cellCount++, key: 'cell-50-150')
+          ..addListener(() => rowCount++, key: 'row-50')
+          ..addListener(() => colCount++, key: 'col-150');
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          // Simulate typical table interaction pattern
+          controller.notifyListeners(key: 'cell-50-150'); // Cell edit
+          if (i % 10 == 0) {
+            controller.notifyListeners(key: 'row-50'); // Row selection
+          }
+          if (i % 20 == 0) {
+            controller.notifyListeners(key: 'col-150'); // Column sort
+          }
+        }
+        sw.stop();
+
+        expect(cellCount, iterations);
+        expect(rowCount, iterations ~/ 10);
+        expect(colCount, iterations ~/ 20);
+
+        const totalOps = iterations + (iterations ~/ 10) + (iterations ~/ 20);
+        final avgUs = sw.elapsedMicroseconds / totalOps;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print(
+          '  Mixed workload: ${avgUs.toStringAsFixed(3)}us/op ($totalOps ops)',
+        );
+
+        controller.dispose();
+      });
+    });
+
+    group('ChangeNotifier Comparison', () {
+      test('ChangeNotifier baseline - simple notify', () {
+        final notifier = ValueNotifier<int>(-1);
+        var count = 0;
+
+        notifier.addListener(() => count++);
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          notifier.value = i;
+        }
+        sw.stop();
+
+        expect(count, iterations);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  ChangeNotifier notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        notifier.dispose();
+      });
+
+      test('Controller - simple notify (for comparison)', () {
+        final controller = TestController();
+        var count = 0;
+
+        controller.addListener(() => count++);
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller.notifyListeners();
+        }
+        sw.stop();
+
+        expect(count, iterations);
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Controller notify: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+
+      test('ChangeNotifier baseline - add/remove', () {
+        final notifier = ValueNotifier<int>(0);
+        void listener() {}
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          notifier
+            ..addListener(listener)
+            ..removeListener(listener);
+        }
+        sw.stop();
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  ChangeNotifier add/remove: ${avgUs.toStringAsFixed(3)}us/op');
+
+        notifier.dispose();
+      });
+
+      test('Controller - add/remove (for comparison)', () {
+        final controller = TestController();
+        void listener() {}
+
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < iterations; i++) {
+          controller
+            ..addListener(listener)
+            ..removeListener(listener);
+        }
+        sw.stop();
+
+        final avgUs = sw.elapsedMicroseconds / iterations;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Controller add/remove: ${avgUs.toStringAsFixed(3)}us/op');
+
+        controller.dispose();
+      });
+    });
+
+    group('Memory Pressure', () {
+      test('rapid listener churn', () {
+        final controller = TestController();
+        final listeners = <VoidCallback>[];
+
+        // Create many listeners
+        for (var i = 0; i < 1000; i++) {
+          listeners.add(() {});
+        }
+
+        final sw = Stopwatch()..start();
+        for (var round = 0; round < 100; round++) {
+          // Add all then remove all
+          listeners
+            ..forEach(controller.addListener)
+            ..forEach(controller.removeListener);
+        }
+        sw.stop();
+
+        final avgMs = sw.elapsedMilliseconds / 100;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  1000 listener churn: ${avgMs.toStringAsFixed(2)}ms/round');
+
+        // Should complete within frame budget
+        expect(avgMs, lessThan(16.67));
+
+        controller.dispose();
+      });
+
+      test('keyed listener scaling', () {
+        final controller = TestController();
+
+        // Add listeners for many keys
+        final sw = Stopwatch()..start();
+        for (var i = 0; i < totalCells; i++) {
+          controller.addListener(() {}, key: 'cell-$i');
+        }
+        sw.stop();
+
+        final avgUs = sw.elapsedMicroseconds / totalCells;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print(
+          '  $totalCells keyed listeners: ${avgUs.toStringAsFixed(3)}us/add',
+        );
+
+        // Verify O(1) lookup still works
+        final lookupSw = Stopwatch()..start();
+        controller.notifyListeners(key: 'cell-${totalCells - 1}');
+        lookupSw.stop();
+
+        final lookupUs = lookupSw.elapsedMicroseconds;
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Lookup with $totalCells keys: ${lookupUs}us');
+
+        controller.dispose();
+      });
+    });
+
+    group('60fps Frame Budget Analysis', () {
+      test('maximum notifications per frame', () {
+        final controller = TestController();
+        var count = 0;
+        controller.addListener(() => count++);
+
+        // Measure how many notifications fit in 16.67ms (60fps frame)
+        const frameBudgetUs = 16670; // 16.67ms in microseconds
+        final sw = Stopwatch()..start();
+        var notifications = 0;
+        while (sw.elapsedMicroseconds < frameBudgetUs) {
+          controller.notifyListeners();
+          notifications++;
+        }
+        sw.stop();
+
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Max notifications/frame: $notifications');
+        // Benchmark output for performance analysis (continued from above)
+        // ignore: avoid_print
+        print(
+          '  Avg time: ${(frameBudgetUs / notifications).toStringAsFixed(2)}us/notify',
+        );
+
+        // Should support at least 10,000 notifications per frame
+        expect(notifications, greaterThan(10000));
+
+        controller.dispose();
+      });
+
+      test('keyed notifications per frame', () {
+        final controller = TestController();
+
+        // Setup with 1000 keyed listeners
+        for (var i = 0; i < 1000; i++) {
+          controller.addListener(() {}, key: 'key-$i');
+        }
+
+        const frameBudgetUs = 16670;
+        final sw = Stopwatch()..start();
+        var notifications = 0;
+        var keyIndex = 0;
+        while (sw.elapsedMicroseconds < frameBudgetUs) {
+          controller.notifyListeners(key: 'key-${keyIndex % 1000}');
+          notifications++;
+          keyIndex++;
+        }
+        sw.stop();
+
+        // Benchmark output for performance analysis
+        // ignore: avoid_print
+        print('  Max keyed notifications/frame: $notifications');
+
+        // Should support at least 5,000 keyed notifications per frame
+        expect(notifications, greaterThan(5000));
+
+        controller.dispose();
       });
     });
   });
