@@ -789,4 +789,182 @@ class _MyWidgetState extends State<MyWidget> {
       [lint(316, 34)],
     );
   }
+
+  Future<void> test_addListener_in_helper_method_reports_lint() async {
+    // Tests that addListener in a helper method called from initState is detected
+    await assertDiagnostics(
+      r'''
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+
+class MyWidget extends StatefulWidget {}
+
+class _MyWidgetState extends State<MyWidget> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupListeners();
+  }
+
+  void _setupListeners() {
+    _controller.addListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChange() {}
+}
+''',
+      [lint(334, 34)],
+    );
+  }
+
+  Future<void> test_addListener_in_helper_with_remove_no_lint() async {
+    // Tests that addListener in a helper is matched with removeListener in dispose helper
+    await assertNoDiagnostics(r'''
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+
+class MyWidget extends StatefulWidget {}
+
+class _MyWidgetState extends State<MyWidget> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setupListeners();
+  }
+
+  void _setupListeners() {
+    _controller.addListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    _cleanupListeners();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _cleanupListeners() {
+    _controller.removeListener(_onChange);
+  }
+
+  void _onChange() {}
+}
+''');
+  }
+
+  Future<void> test_addListener_in_nested_helper_reports_lint() async {
+    // Tests that addListener in a deeply nested helper is detected
+    await assertDiagnostics(
+      r'''
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+
+class MyWidget extends StatefulWidget {}
+
+class _MyWidgetState extends State<MyWidget> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _setup();
+  }
+
+  void _setup() {
+    _setupListeners();
+  }
+
+  void _setupListeners() {
+    _controller.addListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChange() {}
+}
+''',
+      [lint(371, 34)],
+    );
+  }
+
+  Future<void> test_direct_add_with_remove_in_helper_no_lint() async {
+    // Tests that addListener directly in initState with removeListener
+    // in a helper called from dispose works correctly
+    await assertNoDiagnostics(r'''
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+
+class MyWidget extends StatefulWidget {}
+
+class _MyWidgetState extends State<MyWidget> {
+  final _controller = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onChange);
+  }
+
+  void _removeListener() {
+    _controller.removeListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    _removeListener();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onChange() {}
+}
+''');
+  }
+
+  Future<void> test_widget_target_with_remove_in_helper_no_lint() async {
+    // Tests that addListener with widget.x target and removeListener
+    // in a helper called from dispose works correctly
+    await assertNoDiagnostics(r'''
+import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
+
+class MyWidget extends StatefulWidget {
+  final ValueNotifier<int> counter = ValueNotifier(0);
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  @override
+  void initState() {
+    super.initState();
+    widget.counter.addListener(_onChange);
+  }
+
+  void _removeListener() {
+    widget.counter.removeListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    _removeListener();
+    super.dispose();
+  }
+
+  void _onChange() {}
+}
+''');
+  }
 }

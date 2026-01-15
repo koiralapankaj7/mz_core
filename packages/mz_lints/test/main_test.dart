@@ -18,10 +18,10 @@ void main() {
       expect(() => plugin.register(mockRegistry), returnsNormally);
     });
 
-    test('registers three warning rules', () {
+    test('registers four warning rules', () {
       final mockRegistry = _MockPluginRegistry();
       plugin.register(mockRegistry);
-      expect(mockRegistry.warningRulesCount, equals(3));
+      expect(mockRegistry.warningRulesCount, equals(4));
     });
 
     test('registers fixes for rules', () {
@@ -29,8 +29,9 @@ void main() {
       plugin.register(mockRegistry);
       // 1 fix for controller_listen_in_callback
       // 2 fixes for dispose_notifier
+      // 2 fixes for duplicate_listener
       // 2 fixes for remove_listener
-      expect(mockRegistry.fixesCount, equals(5));
+      expect(mockRegistry.fixesCount, equals(7));
     });
   });
 }

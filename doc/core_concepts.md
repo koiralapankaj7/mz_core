@@ -11,6 +11,7 @@ This guide explains the key architectural patterns and concepts used in mz_core.
 - [Structured Logging](#structured-logging)
 - [Rate Limiting (Debounce/Throttle)](#rate-limiting-debouncethrottle)
 - [Memoization](#memoization)
+- [Event Queue System](#event-queue-system)
 
 ## Controllers and State Management
 
@@ -620,7 +621,7 @@ if (results != null) {
 
 ## Memoization
 
-### Concept
+### What is Memoization?
 
 **Memoization** caches the results of expensive computations so subsequent calls
 with the same inputs return instantly from cache.
@@ -709,7 +710,7 @@ final results = await Future.wait([
 // results[0] == results[1] == results[2]
 ```
 
-### When to Use
+### When to Use Memoization
 
 | Use Case | Example |
 | -------- | ------- |
@@ -833,6 +834,218 @@ if (logger.guard(() {
   print('Logging disabled');
 }
 ```
+
+## Event Queue System
+
+### Overview
+
+`EventManager` is a high-performance event queue system that handles ordered execution of async operations with features like cancellation, retry, undo/redo, and progress reporting.
+
+### Why EventManager?
+
+Traditional state management handles UI state well, but falls short when applications need:
+
+- **Ordered execution** of async operations (API calls, database writes)
+- **Cancellable operations** with token-based group cancellation
+- **Undo/Redo support** for user actions
+- **Automatic retry** with configurable backoff strategies
+- **Progress reporting** for UI feedback during execution
+
+### Core Components
+
+| Component | Purpose |
+| --------- | ------- |
+| `EventManager<T>` | Main queue processor with configurable execution modes |
+| `BaseEvent<T>` | Base class for defining events |
+| `UndoableEvent<T>` | Events with undo/redo capability |
+| `BatchEvent<T>` | Process multiple events as a unit |
+| `EventToken` | Token for pausing/cancelling groups of events |
+| `UndoRedoManager` | Manages undo/redo history |
+| `EventLogger` | Event lifecycle logging |
+
+### Event Lifecycle
+
+Events progress through these states:
+
+```text
+Created → Pending → Running → Complete/Error/Cancel
+                      ↓
+                   Progress (0.0 - 1.0)
+                      ↓
+                   Retry (if failed with RetryPolicy)
+```
+
+### Execution Modes
+
+```dart
+// Sequential (default) - one event at a time
+final manager = EventManager<AppState>();
+
+// Concurrent - parallel processing
+final manager = EventManager<AppState>(
+  executionMode: ExecutionMode.concurrent(maxConcurrency: 3),
+);
+
+// Rate limited - N events per time window
+final manager = EventManager<AppState>(
+  executionMode: ExecutionMode.rateLimited(
+    limit: 10,
+    window: Duration(seconds: 1),
+  ),
+);
+```
+
+### Creating Events
+
+```dart
+class FetchUserEvent extends BaseEvent<AppState> {
+  FetchUserEvent(this.userId);
+
+  final String userId;
+
+  @override
+  Duration? get timeout => const Duration(seconds: 30);
+
+  @override
+  int get priority => 10; // Higher = processed first
+
+  @override
+  RetryPolicy? get retryPolicy => RetryPolicy(
+    maxAttempts: 3,
+    backoff: RetryBackoff.exponential(
+      initial: Duration(seconds: 1),
+    ),
+  );
+
+  @override
+  Future<User> buildAction(EventManager<AppState> manager) async {
+    reportProgress(0.0, message: 'Connecting...');
+    final user = await api.fetchUser(userId);
+    reportProgress(1.0, message: 'Done');
+    return user;
+  }
+}
+```
+
+### Dispatching Events
+
+```dart
+manager.addEventToQueue(
+  FetchUserEvent('123'),
+  onDone: (event, user) => print('Got: $user'),
+  onError: (error) => print('Failed: $error'),
+);
+```
+
+### Token-Based Cancellation
+
+Group related events for collective control:
+
+```dart
+final token = EventToken();
+
+manager.addEventToQueue(FetchUserEvent('1', token: token));
+manager.addEventToQueue(FetchUserEvent('2', token: token));
+manager.addEventToQueue(FetchUserEvent('3', token: token));
+
+// Cancel all events with this token
+token.cancel(reason: 'User navigated away');
+
+// Or pause/resume
+token.pause();
+token.resume();
+```
+
+### Undo/Redo Support
+
+```dart
+class UpdateNameEvent extends UndoableEvent<AppState> {
+  UpdateNameEvent(this.newName);
+
+  final String newName;
+  String? _previousName;
+
+  @override
+  void captureState(EventManager<AppState> manager) {
+    _previousName = manager.state.name;
+  }
+
+  @override
+  Future<void> buildAction(EventManager<AppState> manager) async {
+    manager.state.name = newName;
+  }
+
+  @override
+  Future<void> undo(EventManager<AppState> manager) async {
+    manager.state.name = _previousName!;
+  }
+
+  @override
+  String get undoDescription => 'Change name to "$newName"';
+}
+
+// Usage
+manager.addEventToQueue(UpdateNameEvent('John'));
+
+// Undo/redo
+await manager.undoManager?.undo(manager);
+await manager.undoManager?.redo(manager);
+```
+
+### Backpressure Control
+
+Prevent memory issues with queue limits:
+
+```dart
+final manager = EventManager<AppState>(
+  maxQueueSize: 1000,
+  overflowPolicy: OverflowPolicy.dropOldest, // or .dropNewest, .error
+);
+```
+
+| Policy | Behavior |
+| ------ | -------- |
+| `dropNewest` | New events discarded when queue is full |
+| `dropOldest` | Oldest events removed to make room |
+| `error` | Throws `QueueOverflowError` when full |
+
+### Retry Strategies
+
+```dart
+// Exponential backoff: 1s, 2s, 4s, 8s...
+RetryBackoff.exponential(
+  initial: Duration(seconds: 1),
+  maxDelay: Duration(seconds: 30),
+)
+
+// Linear backoff: 1s, 2s, 3s, 4s...
+RetryBackoff.linear(
+  initial: Duration(seconds: 1),
+  increment: Duration(seconds: 1),
+)
+
+// Constant delay: 1s, 1s, 1s...
+RetryBackoff.constant(Duration(seconds: 1))
+```
+
+### When to Use EventManager
+
+| Use Case | Example |
+| -------- | ------- |
+| **Ordered operations** | Database writes that must execute in order |
+| **Cancellable workflows** | Multi-step processes user can abort |
+| **Undo/redo features** | Text editors, drawing apps, form builders |
+| **Retry-sensitive operations** | Network requests with transient failures |
+| **Progress-tracked tasks** | File uploads, batch processing |
+
+### EventManager vs Other Patterns
+
+| Pattern | Best For |
+| ------- | -------- |
+| **Controller** | UI state, simple value changes |
+| **EventManager** | Async operations, workflows, undo/redo |
+| **Debouncer** | User input, search-as-you-type |
+| **Memoizer** | Caching expensive computations |
 
 ## Next Steps
 

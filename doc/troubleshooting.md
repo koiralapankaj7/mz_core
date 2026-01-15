@@ -9,6 +9,7 @@ Common issues and solutions when using mz_core.
 - [Logging](#logging)
 - [Debounce/Throttle](#debouncethrottle)
 - [Listenable Collections](#listenable-collections)
+- [EventManager](#eventmanager)
 - [Memory and Performance](#memory-and-performance)
 
 ## Controllers
@@ -474,6 +475,254 @@ final copy = List<int>.from(list.sublist(0, 2));
 copy.add(4);  // Independent list
 ```
 
+## EventManager
+
+### Issue: Event not executing
+
+**Symptom**: Event added to queue but never executes.
+
+**Diagnostic checklist**:
+
+1. **Is the manager paused?**
+
+   ```dart
+   manager.pause();  // Events won't execute
+   manager.resume(); // Resume processing
+   ```
+
+2. **Is the event's token cancelled or paused?**
+
+   ```dart
+   final token = EventToken();
+   token.pause();  // Events with this token are skipped
+   token.cancel(); // Events with this token are cancelled
+   ```
+
+3. **Is the queue full with `OverflowPolicy.dropNewest`?**
+
+   ```dart
+   // New events are silently dropped when queue is full
+   final manager = EventManager(
+     maxQueueSize: 10,
+     overflowPolicy: OverflowPolicy.dropNewest,
+   );
+   ```
+
+4. **Is another event blocking in sequential mode?**
+
+   ```dart
+   // In sequential mode, a stuck event blocks the queue
+   // Consider using concurrent mode or adding timeouts
+   ```
+
+### Issue: Event timeout not working
+
+**Symptom**: Event runs forever despite timeout setting.
+
+**Cause**: Timeout only applies to `buildAction()`, not to setup code.
+
+**Solution**: Ensure long-running code is inside `buildAction()`:
+
+```dart
+class MyEvent extends BaseEvent<AppState> {
+  @override
+  Duration? get timeout => const Duration(seconds: 10);
+
+  @override
+  Future<void> buildAction(EventManager<AppState> manager) async {
+    // This code is subject to timeout
+    await longRunningOperation();
+  }
+}
+```
+
+### Issue: Retry not working
+
+**Symptom**: Event fails but doesn't retry.
+
+**Diagnostic checklist**:
+
+1. **Is RetryPolicy configured?**
+
+   ```dart
+   @override
+   RetryPolicy? get retryPolicy => RetryPolicy(
+     maxAttempts: 3,
+     backoff: RetryBackoff.exponential(
+       initial: const Duration(seconds: 1),
+     ),
+   );
+   ```
+
+2. **Did you reach maxAttempts?**
+
+   Check logs for retry attempts. After `maxAttempts`, the event fails permanently.
+
+3. **Is the error retryable?**
+
+   Some errors (like validation errors) shouldn't be retried. Check your error handling.
+
+### Issue: Undo/redo not working
+
+**Symptom**: `undo()` or `redo()` has no effect.
+
+**Diagnostic checklist**:
+
+1. **Is UndoRedoManager configured?**
+
+   ```dart
+   final manager = EventManager<AppState>(
+     undoManager: UndoRedoManager(maxHistorySize: 50),
+   );
+   ```
+
+2. **Is the event an UndoableEvent?**
+
+   ```dart
+   // Regular BaseEvent - not undoable
+   class MyEvent extends BaseEvent<AppState> { ... }
+
+   // UndoableEvent - supports undo/redo
+   class MyEvent extends UndoableEvent<AppState> { ... }
+   ```
+
+3. **Is `captureState()` implemented?**
+
+   ```dart
+   @override
+   void captureState(EventManager<AppState> manager) {
+     _previousValue = manager.state.value;  // Must capture state!
+   }
+   ```
+
+4. **Check canUndo/canRedo:**
+
+   ```dart
+   if (manager.undoManager?.canUndo ?? false) {
+     await manager.undoManager!.undo(manager);
+   }
+   ```
+
+### Issue: QueueOverflowError thrown
+
+**Symptom**: Exception when adding events.
+
+**Cause**: Queue is full with `OverflowPolicy.error`.
+
+**Solutions**:
+
+1. **Increase queue size:**
+
+   ```dart
+   final manager = EventManager<AppState>(
+     maxQueueSize: 10000,  // Increase limit
+   );
+   ```
+
+2. **Change overflow policy:**
+
+   ```dart
+   final manager = EventManager<AppState>(
+     maxQueueSize: 1000,
+     overflowPolicy: OverflowPolicy.dropOldest,  // Or .dropNewest
+   );
+   ```
+
+3. **Process events faster:**
+
+   ```dart
+   // Use concurrent mode for parallel processing
+   final manager = EventManager<AppState>(
+     executionMode: ExecutionMode.concurrent(maxConcurrency: 5),
+   );
+   ```
+
+### Issue: Events executing out of order
+
+**Symptom**: Lower priority events execute before higher priority.
+
+**Cause 1**: Using concurrent execution mode:
+
+```dart
+// Concurrent mode doesn't guarantee order
+final manager = EventManager<AppState>(
+  executionMode: ExecutionMode.concurrent(maxConcurrency: 3),
+);
+```
+
+**Solution**: Use sequential mode for strict ordering:
+
+```dart
+final manager = EventManager<AppState>(); // Sequential by default
+```
+
+**Cause 2**: Priority not set correctly:
+
+```dart
+// Higher priority = processed first
+@override
+int get priority => 100;  // High priority
+
+@override
+int get priority => 0;    // Default/low priority
+```
+
+### Issue: Token cancellation not immediate
+
+**Symptom**: Events continue executing after `token.cancel()`.
+
+**Cause**: Currently executing events complete before cancellation takes effect.
+
+**Solution**: Check `token.isCancelled` in long-running operations:
+
+```dart
+@override
+Future<void> buildAction(EventManager<AppState> manager) async {
+  for (final item in items) {
+    if (token?.isCancelled ?? false) {
+      throw CancelledException('Operation cancelled');
+    }
+    await processItem(item);
+  }
+}
+```
+
+### Issue: Memory leak in EventManager
+
+**Symptom**: Memory grows over time with EventManager.
+
+**Diagnostic checklist**:
+
+1. **Dispose the manager when done:**
+
+   ```dart
+   @override
+   void dispose() {
+     manager.dispose();
+     super.dispose();
+   }
+   ```
+
+2. **Limit undo history size:**
+
+   ```dart
+   final manager = EventManager<AppState>(
+     undoManager: UndoRedoManager(maxHistorySize: 50),  // Limit history
+   );
+   ```
+
+3. **Limit logger history:**
+
+   ```dart
+   final manager = EventManager<AppState>(
+     logger: EventLogger(maxHistorySize: 100),  // Limit logs
+   );
+   ```
+
+4. **Clear completed events:**
+
+   Events in terminal states are automatically cleaned up, but check for stuck events.
+
 ## Memory and Performance
 
 ### Issue: High memory usage
@@ -489,12 +738,9 @@ copy.add(4);  // Independent list
    @override
    void dispose() {
      _controller.dispose();
-     _listenabl
-
-eList.dispose();
+     _listenableList.dispose();
      super.dispose();
    }
-
    ```
 
 2. **Accumulating log groups:**
@@ -506,7 +752,7 @@ eList.dispose();
    print('Active groups: ${logger._activeGroups.length}');
    ```
 
-1. **Listener leaks:**
+3. **Listener leaks:**
 
    Ensure all listeners are removed:
 
@@ -616,26 +862,33 @@ If your issue isn't covered here:
 
 ## Known Limitations
 
-### SimpleLogger
+### SimpleLogger Limitations
 
 - Single output per logger (no multi-output built-in)
 - Synchronous output (async writes must be handled by output implementation)
 - Group timeout is per-group, not global
 
-### Controllers
+### Controller Limitations
 
 - Notification is synchronous (no async listener support)
 - All listeners notified even if predicate filters them (predicate runs per-listener)
 
-### Listenable Collections
+### Listenable Collection Limitations
 
 - No granular change events (only "something changed")
 - Not compatible with AnimatedList without additional wrapper
 
-### Debounce/Throttle
+### Debounce/Throttle Limitations
 
 - Debouncer uses static state (can't easily test in isolation)
 - Throttler immediate mode executes synchronously (can't be async)
+
+### EventManager Limitations
+
+- Sequential mode blocks on slow events (use timeouts or concurrent mode)
+- Token cancellation doesn't interrupt currently executing events
+- Undo/redo requires explicit state capture in `captureState()`
+- Event merging only works for consecutive events of the same type
 
 ## Performance Tips
 

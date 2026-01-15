@@ -2639,7 +2639,9 @@ void main() {
         final avgUs = sw.elapsedMicroseconds / totalOps;
         // Benchmark output for performance analysis
         // ignore: avoid_print
-        print('  Mixed workload: ${avgUs.toStringAsFixed(3)}us/op ($totalOps ops)');
+        print(
+          '  Mixed workload: ${avgUs.toStringAsFixed(3)}us/op ($totalOps ops)',
+        );
 
         controller.dispose();
       });
@@ -2774,7 +2776,9 @@ void main() {
         final avgUs = sw.elapsedMicroseconds / totalCells;
         // Benchmark output for performance analysis
         // ignore: avoid_print
-        print('  $totalCells keyed listeners: ${avgUs.toStringAsFixed(3)}us/add');
+        print(
+          '  $totalCells keyed listeners: ${avgUs.toStringAsFixed(3)}us/add',
+        );
 
         // Verify O(1) lookup still works
         final lookupSw = Stopwatch()..start();
@@ -2811,7 +2815,9 @@ void main() {
         print('  Max notifications/frame: $notifications');
         // Benchmark output for performance analysis (continued from above)
         // ignore: avoid_print
-        print('  Avg time: ${(frameBudgetUs / notifications).toStringAsFixed(2)}us/notify');
+        print(
+          '  Avg time: ${(frameBudgetUs / notifications).toStringAsFixed(2)}us/notify',
+        );
 
         // Should support at least 10,000 notifications per frame
         expect(notifications, greaterThan(10000));

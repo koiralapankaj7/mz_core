@@ -21,7 +21,7 @@ Add `mz_lints` to your `pubspec.yaml`:
 
 ```yaml
 dev_dependencies:
-  mz_lints: ^0.0.1
+  mz_lints: ^0.1.0
 ```
 
 Then enable the plugin in your `analysis_options.yaml`:
@@ -29,7 +29,7 @@ Then enable the plugin in your `analysis_options.yaml`:
 ```yaml
 # Requires Dart 3.10+ / Flutter 3.38+
 plugins:
-  mz_lints: ^0.0.1
+  mz_lints: ^0.1.0
 ```
 
 ## Rule Details

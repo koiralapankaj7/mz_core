@@ -3783,7 +3783,6 @@ void main() {
 
       manager.dispose();
     });
-
   });
 
   // ============== RateLimited Mode (limit: 1) Tests ==============
@@ -7007,8 +7006,7 @@ void main() {
       manager.dispose();
     });
 
-    test('memory stability - repeated manager create/dispose cycles',
-        () async {
+    test('memory stability - repeated manager create/dispose cycles', () async {
       // Test for memory leaks by creating/disposing many managers
       const cycles = 100;
       const eventsPerCycle = 50;
@@ -7207,8 +7205,7 @@ void main() {
       manager.dispose();
     });
 
-    test('event starvation - low priority events eventually execute',
-        () async {
+    test('event starvation - low priority events eventually execute', () async {
       // Ensure low priority events don't starve when high priority
       // events keep arriving
       final executionOrder = <String>[];
@@ -7506,8 +7503,8 @@ void main() {
         }
         stopwatch.stop();
 
-        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
-            .toStringAsFixed(0);
+        final eventsPerSecond =
+            (total / stopwatch.elapsedMilliseconds * 1000).toStringAsFixed(0);
         final avgLatencyUs =
             (stopwatch.elapsedMicroseconds / total).toStringAsFixed(2);
 
@@ -7542,8 +7539,8 @@ void main() {
         }
         stopwatch.stop();
 
-        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
-            .toStringAsFixed(0);
+        final eventsPerSecond =
+            (total / stopwatch.elapsedMilliseconds * 1000).toStringAsFixed(0);
 
         results.writeln('\n2. SYNC EVENTS (Concurrent Mode)');
         results.writeln('   Events processed: $total');
@@ -7577,8 +7574,8 @@ void main() {
         }
         stopwatch.stop();
 
-        final eventsPerSecond = (total / stopwatch.elapsedMilliseconds * 1000)
-            .toStringAsFixed(1);
+        final eventsPerSecond =
+            (total / stopwatch.elapsedMilliseconds * 1000).toStringAsFixed(1);
         final concurrencyFactor =
             (total * apiDelayMs / stopwatch.elapsedMilliseconds)
                 .toStringAsFixed(1);
@@ -7626,8 +7623,9 @@ void main() {
         results.writeln('\n4. 60 FPS FRAME BUDGET (${frameBudgetMs}ms)');
         results.writeln('   Events per frame: $eventsPerFrame');
         results.writeln('   Max events @ 60fps: $maxEventsAt60fps/sec');
-        results
-            .writeln('   Safe cell edits/frame: ${(eventsPerFrame * 0.5).toInt()} (50% headroom)');
+        results.writeln(
+          '   Safe cell edits/frame: ${(eventsPerFrame * 0.5).toInt()} (50% headroom)',
+        );
 
         manager.dispose();
       }

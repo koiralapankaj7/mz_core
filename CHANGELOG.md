@@ -5,6 +5,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-14
+
+### Added in 1.3.0
+
+#### EventManager - High-Performance Event Queue System
+
+A comprehensive event queue system for Flutter applications that combines features typically requiring 5-6 separate packages into a unified solution.
+
+**Core Features:**
+
+- `EventManager<T>` - type-safe event queue with configurable execution modes
+- `Event<T>` - base class for defining events with optional timeout, retry, and progress support
+- `UndoableEvent<T>` - events with automatic undo/redo capability
+- `BatchEvent<T>` - process multiple events as a single unit
+
+**Execution Modes:**
+
+- `ExecutionMode.sequential` - process events one at a time (default)
+- `ExecutionMode.concurrent(maxConcurrency)` - parallel processing with concurrency limit
+- `ExecutionMode.rateLimited(limit, window)` - rate-limited processing
+
+**Event Lifecycle:**
+
+- `EventPending` → `EventRunning` → `EventComplete`/`EventError`/`EventCancel`
+- Automatic retry with configurable backoff strategies (exponential, linear, constant)
+- Token-based cancellation for groups of related events
+- Real-time progress reporting during execution
+
+**Backpressure Control:**
+
+- Configurable `maxQueueSize` to prevent memory issues
+- `OverflowPolicy.dropNewest` - reject new events when queue is full
+- `OverflowPolicy.dropOldest` - remove oldest events to make room
+- `OverflowPolicy.error` - throw exception when queue is full
+
+**Undo/Redo Support:**
+
+- Full undo/redo stack with `undo()` and `redo()` methods
+- Event merging for combining related operations
+- `canUndo` and `canRedo` getters for UI state
+
+**Logging Integration:**
+
+- Built-in `EventLogger` with colored output
+- Configurable log levels (none, error, warning, info, debug)
+- Full event lifecycle logging for debugging
+
+**Example:**
+
+```dart
+final manager = EventManager<String>();
+
+// Define an event
+class FetchUserEvent extends Event<String> {
+  final String userId;
+  FetchUserEvent(this.userId);
+
+  @override
+  Future<String> execute(EventContext context) async {
+    final user = await api.fetchUser(userId);
+    return user.name;
+  }
+}
+
+// Listen to events
+manager.stream.listen((state) {
+  switch (state) {
+    case EventComplete(:final data): print('Got: $data');
+    case EventError(:final error): print('Error: $error');
+    case EventCancel(:final reason): print('Cancelled: $reason');
+  }
+});
+
+// Add events
+manager.add(FetchUserEvent('123'));
+```
+
 ## [1.2.0] - 2026-01-09
 
 ### Added in 1.2.0
@@ -178,6 +255,7 @@ Debouncer.cancelAll();
 - GitHub repository and issue tracker
 - pub.dev integration
 
+[1.3.0]: https://github.com/koiralapankaj7/mz_core/releases/tag/v1.3.0
 [1.2.0]: https://github.com/koiralapankaj7/mz_core/releases/tag/v1.2.0
 [1.1.0]: https://github.com/koiralapankaj7/mz_core/releases/tag/v1.1.0
 [1.0.0]: https://github.com/koiralapankaj7/mz_core/releases/tag/v1.0.0

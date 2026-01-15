@@ -116,7 +116,85 @@ class _Visitor extends SimpleAstVisitor<void> {
     // Check if this class extends State<T>
     if (!_isStateClass(node)) return;
 
-    // Get the compilation unit and ignore info
+    // Single pass: collect all method info, listener operations, and method calls
+    final methodBodies = <String, MethodDeclaration>{};
+    final addListenersByMethod = <String, List<_ListenerInfo>>{};
+    final removeListenersByMethod = <String, List<_ListenerInfo>>{};
+    final methodCallsByMethod = <String, List<String>>{};
+    final lifecycleMethodNames = <String>[];
+    String? disposeMethodName;
+
+    final collector = _CombinedListenerCollector(
+      addListenersByMethod,
+      removeListenersByMethod,
+      methodCallsByMethod,
+    );
+
+    for (final member in node.members) {
+      if (member is MethodDeclaration) {
+        final methodName = member.name.lexeme;
+        methodBodies[methodName] = member;
+        collector.currentMethod = methodName;
+        member.accept(collector);
+
+        if (methodName == 'initState' ||
+            methodName == 'didChangeDependencies' ||
+            methodName == 'didUpdateWidget') {
+          lifecycleMethodNames.add(methodName);
+        } else if (methodName == 'dispose') {
+          disposeMethodName = methodName;
+        }
+      }
+    }
+
+    // Early exit: no lifecycle methods means nothing to check
+    if (lifecycleMethodNames.isEmpty) return;
+
+    // Collect addListener calls from lifecycle methods (including through helpers)
+    final addedListeners = <_ListenerInfo>[];
+    final visitedAdd = <String>{};
+    for (final lifecycle in lifecycleMethodNames) {
+      _collectListenersTransitively(
+        lifecycle,
+        addListenersByMethod,
+        methodCallsByMethod,
+        addedListeners,
+        visitedAdd,
+      );
+    }
+
+    // Early exit: no listeners added means nothing to check
+    if (addedListeners.isEmpty) return;
+
+    // Collect removeListener calls from dispose (including through helpers)
+    final removedListeners = <_ListenerInfo>[];
+    if (disposeMethodName != null) {
+      _collectListenersTransitively(
+        disposeMethodName,
+        removeListenersByMethod,
+        methodCallsByMethod,
+        removedListeners,
+        <String>{},
+      );
+    }
+
+    // Find unremoved listeners
+    final unremovedListeners = <_ListenerInfo>[];
+    for (final added in addedListeners) {
+      final isRemoved = removedListeners.any(
+        (removed) =>
+            removed.callbackName == added.callbackName &&
+            _targetMatches(added.targetName, removed.targetName),
+      );
+      if (!isRemoved) {
+        unremovedListeners.add(added);
+      }
+    }
+
+    // Early exit: all listeners are properly removed
+    if (unremovedListeners.isEmpty) return;
+
+    // Get ignore info only if we need to report (lazy evaluation)
     final unit = node.root as CompilationUnit;
     final ignoreInfo = IgnoreInfo.fromUnit(unit);
     final ruleName = RemoveListener.code.name;
@@ -124,39 +202,42 @@ class _Visitor extends SimpleAstVisitor<void> {
     // Check if this rule is ignored for the entire file
     if (ignoreInfo.isIgnoredForFile(ruleName)) return;
 
-    // Find all addListener calls
-    final addedListeners = <_ListenerInfo>[];
-    final removedListeners = <_ListenerInfo>[];
-
-    for (final member in node.members) {
-      if (member is MethodDeclaration) {
-        final methodName = member.name.lexeme;
-
-        if (methodName == 'initState' ||
-            methodName == 'didChangeDependencies' ||
-            methodName == 'didUpdateWidget') {
-          // Look for addListener calls
-          member.accept(_AddListenerVisitor(addedListeners));
-        } else if (methodName == 'dispose') {
-          // Look for removeListener calls
-          member.accept(_RemoveListenerVisitor(removedListeners));
-        }
+    // Report unremoved listeners
+    for (final added in unremovedListeners) {
+      if (!ignoreInfo.isIgnoredAtNode(ruleName, added.node, unit)) {
+        rule.reportAtNode(added.node, arguments: [added.callbackName]);
       }
     }
+  }
 
-    // Report listeners that are added but not removed
-    for (final added in addedListeners) {
-      final isRemoved = removedListeners.any(
-        (removed) =>
-            removed.callbackName == added.callbackName &&
-            _targetMatches(added.targetName, removed.targetName),
-      );
+  /// Collects listeners from a method transitively through method calls.
+  void _collectListenersTransitively(
+    String methodName,
+    Map<String, List<_ListenerInfo>> listenersByMethod,
+    Map<String, List<String>> methodCallsByMethod,
+    List<_ListenerInfo> result,
+    Set<String> visited,
+  ) {
+    if (visited.contains(methodName)) return;
+    visited.add(methodName);
 
-      if (!isRemoved) {
-        // Check if this specific line is ignored
-        if (!ignoreInfo.isIgnoredAtNode(ruleName, added.node, unit)) {
-          rule.reportAtNode(added.node, arguments: [added.callbackName]);
-        }
+    // Add direct listeners from this method
+    final listeners = listenersByMethod[methodName];
+    if (listeners != null) {
+      result.addAll(listeners);
+    }
+
+    // Recursively check called methods
+    final calls = methodCallsByMethod[methodName];
+    if (calls != null) {
+      for (final calledMethod in calls) {
+        _collectListenersTransitively(
+          calledMethod,
+          listenersByMethod,
+          methodCallsByMethod,
+          result,
+          visited,
+        );
       }
     }
   }
@@ -232,17 +313,31 @@ class _ListenerInfo {
   });
 }
 
-/// Visitor to find addListener calls.
-class _AddListenerVisitor extends RecursiveAstVisitor<void> {
-  final List<_ListenerInfo> listeners;
+/// Combined visitor to collect add/remove listeners and method calls in one pass.
+class _CombinedListenerCollector extends RecursiveAstVisitor<void> {
+  final Map<String, List<_ListenerInfo>> addListenersByMethod;
+  final Map<String, List<_ListenerInfo>> removeListenersByMethod;
+  final Map<String, List<String>> methodCallsByMethod;
+  String currentMethod = '';
 
-  _AddListenerVisitor(this.listeners);
+  _CombinedListenerCollector(
+    this.addListenersByMethod,
+    this.removeListenersByMethod,
+    this.methodCallsByMethod,
+  );
 
   @override
   void visitMethodInvocation(MethodInvocation node) {
     final methodName = node.methodName.name;
+    final target = node.target;
 
-    if (methodName == 'addListener' || methodName == 'addStatusListener') {
+    // Check for listener operations
+    final isAdd =
+        methodName == 'addListener' || methodName == 'addStatusListener';
+    final isRemove =
+        methodName == 'removeListener' || methodName == 'removeStatusListener';
+
+    if (isAdd || isRemove) {
       final args = node.argumentList.arguments;
       if (args.isNotEmpty) {
         final callback = args.first;
@@ -255,54 +350,29 @@ class _AddListenerVisitor extends RecursiveAstVisitor<void> {
         }
 
         if (callbackName != null) {
-          listeners.add(
-            _ListenerInfo(
-              targetName: getTargetName(node.target),
-              callbackName: callbackName,
-              node: node,
-            ),
+          final info = _ListenerInfo(
+            targetName: getTargetName(target),
+            callbackName: callbackName,
+            node: node,
           );
+          if (isAdd) {
+            addListenersByMethod
+                .putIfAbsent(currentMethod, () => <_ListenerInfo>[])
+                .add(info);
+          } else {
+            removeListenersByMethod
+                .putIfAbsent(currentMethod, () => <_ListenerInfo>[])
+                .add(info);
+          }
         }
       }
     }
 
-    super.visitMethodInvocation(node);
-  }
-}
-
-/// Visitor to find removeListener calls.
-class _RemoveListenerVisitor extends RecursiveAstVisitor<void> {
-  final List<_ListenerInfo> listeners;
-
-  _RemoveListenerVisitor(this.listeners);
-
-  @override
-  void visitMethodInvocation(MethodInvocation node) {
-    final methodName = node.methodName.name;
-
-    if (methodName == 'removeListener' ||
-        methodName == 'removeStatusListener') {
-      final args = node.argumentList.arguments;
-      if (args.isNotEmpty) {
-        final callback = args.first;
-        String? callbackName;
-
-        if (callback is SimpleIdentifier) {
-          callbackName = callback.name;
-        } else if (callback is PrefixedIdentifier) {
-          callbackName = callback.identifier.name;
-        }
-
-        if (callbackName != null) {
-          listeners.add(
-            _ListenerInfo(
-              targetName: getTargetName(node.target),
-              callbackName: callbackName,
-              node: node,
-            ),
-          );
-        }
-      }
+    // Check for local method calls (no target or 'this' target)
+    if (target == null || target is ThisExpression) {
+      methodCallsByMethod
+          .putIfAbsent(currentMethod, () => <String>[])
+          .add(methodName);
     }
 
     super.visitMethodInvocation(node);

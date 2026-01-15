@@ -2,7 +2,7 @@ name: mz_lints
 description: >-
   Custom Dart lint rules for Flutter apps. Includes rules for proper disposal
   of ChangeNotifiers, listener cleanup, and Controller lookup patterns.
-version: 0.0.1
+version: 0.1.0
 repository: https://github.com/koiralapankaj7/mz_core/tree/main/packages/mz_lints
 issue_tracker: https://github.com/koiralapankaj7/mz_core/issues
 
