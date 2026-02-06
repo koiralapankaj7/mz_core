@@ -25,7 +25,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_core: ^1.3.0
+  mz_core: ^1.3.1
 ```
 
 Then run:

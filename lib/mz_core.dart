@@ -43,6 +43,7 @@ library;
 export 'src/auto_dispose.dart';
 export 'src/controller.dart';
 export 'src/debouncer.dart';
+export 'src/event_manager.dart';
 export 'src/extensions.dart';
 export 'src/listenables.dart';
 export 'src/logger.dart';
