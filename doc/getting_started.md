@@ -8,7 +8,7 @@ Add mz_core to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  mz_core: ^1.3.1
+  mz_core: ^1.3.2
 ```
 
 Run:

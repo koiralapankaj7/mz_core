@@ -1,3 +1,8 @@
+// TODO(pankaj): Add web support for file-based outputs (FileOutput,
+// BufferedFileOutput, RotatingFileOutput). On web, implement a downloadable
+// log file feature using browser download APIs to help with debugging.
+// See: https://github.com/user/repo/issues/XXX
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -1985,9 +1990,11 @@ class LogFormatter {
         // Clamp to reasonable range for readability
         return cols.clamp(40, 200);
       }
-    } on Exception catch (_) {
-      // Terminal width detection failed, use default
+      // coverage:ignore-start
+    } on Object catch (_) {
+      // Terminal width detection failed (including UnsupportedError on web)
     }
+    // coverage:ignore-end
     return 80;
   }
 
@@ -2021,8 +2028,8 @@ class LogFormatter {
         return true;
       }
       // coverage:ignore-start
-    } on Exception catch (_) {
-      // Color detection failed, disable for safety
+    } on Object catch (_) {
+      // Color detection failed (including UnsupportedError on web)
     }
     // coverage:ignore-end
     return false;
