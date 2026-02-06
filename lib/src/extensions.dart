@@ -477,7 +477,7 @@ extension StringMZX on String {
 
     final words = replaceAllMapped(
       RegExp('[A-Z]'),
-      (Match m) => ' ${m[0]}',
+      (m) => ' ${m[0]}',
     ).replaceAll(RegExp('[-_]'), ' ').trim().split(RegExp(r'\s+'));
 
     return words.map(capitalize).join(' ');

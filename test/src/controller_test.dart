@@ -2474,7 +2474,7 @@ void main() {
           (Object? _, Object? value) {
             if (value is int && value.isEven) count++;
           },
-          predicate: (Object? _, Object? value) => value is int && value.isEven,
+          predicate: (_, value) => value is int && value.isEven,
           priority: 1,
         );
 
